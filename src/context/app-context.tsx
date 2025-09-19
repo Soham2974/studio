@@ -3,7 +3,6 @@
 import { createContext, useContext, useReducer, ReactNode, useCallback, useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import type { UserRole, Component, CartItem, ComponentRequest, User, UserDetails } from '@/lib/types';
-import { initialComponents, initialRequests, initialUsers } from '@/lib/mock-data';
 import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
 
 type AppState = {
@@ -86,24 +85,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Simulate loading data from local storage or an API
-    dispatch({ type: 'SET_COMPONENTS', payload: initialComponents });
-    dispatch({ type: 'SET_REQUESTS', payload: initialRequests });
-    dispatch({ type: 'SET_USERS', payload: initialUsers });
+    // In a real app, you would fetch initial data from a database here.
+    // For now, we'll start with empty arrays.
+    dispatch({ type: 'SET_COMPONENTS', payload: [] });
+    dispatch({ type: 'SET_REQUESTS', payload: [] });
+    dispatch({ type: 'SET_USERS', payload: [] });
     dispatch({ type: 'SET_DATA_LOADED', payload: true });
   }, []);
 
 
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
-      // For demo, if user logs in and there are users, use the first one.
-      // In a real app, this would be determined by the login process.
-      if (role === 'user' && state.users.length > 0) {
-          const demoUser = state.users[0];
-          if(demoUser) {
-            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year, phoneNumber: demoUser.phoneNumber, email: demoUser.email };
-          }
-      } else if (role === 'user') {
+      if (role === 'user') {
+        // In a real app, you would fetch user details after they log in.
+        // For now, we'll start with a blank slate for them to fill out.
         userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
@@ -145,8 +140,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: { purpose: string }, userDetails: UserDetails & { email: string }) => {
-    // Find if user exists, if not, create one
+  const submitRequest = (details: { purpose: string }, userDetails: UserDetails) => {
     let user = state.users.find(u => u.email === userDetails.email);
     if (!user) {
         const newUser: User = {
@@ -154,19 +148,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
             createdAt: new Date(),
             ...userDetails
         };
-        dispatch({ type: 'SET_USERS', payload: [...state.users, newUser] });
+        const newUsers = [...state.users, newUser];
+        dispatch({ type: 'SET_USERS', payload: newUsers });
+        user = newUser; // Use the newly created user
     } else {
-        // If user details from form are different, update them
         const updatedUser = { ...user, ...userDetails };
         const newUsers = state.users.map(u => u.id === updatedUser.id ? updatedUser : u);
         dispatch({ type: 'SET_USERS', payload: newUsers });
     }
     
-    // Update the userDetails in the context for the current session
     dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
 
     const newRequest: ComponentRequest = {
-      purpose: details.purpose,
+      ...details,
       userName: userDetails.name,
       department: userDetails.department,
       year: userDetails.year,
