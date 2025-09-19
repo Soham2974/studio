@@ -38,7 +38,7 @@ export type UserRole = 'admin' | 'user' | null;
 export const UserSchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
-    phoneNumber: z.string().regex(/^\+91[0-9]{10}$/, "Phone number must be in +91XXXXXXXXXX format"),
+    phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
     department: z.string().min(1, "Department is required"),
     year: z.string().min(1, "Year is required"),
 });

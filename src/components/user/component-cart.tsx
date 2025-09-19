@@ -53,8 +53,8 @@ export default function ComponentCart() {
         form.reset({
           purpose: '',
           name: '',
-          email: '',
-          phoneNumber: '',
+          email: authUser.email || '',
+          phoneNumber: authUser.phoneNumber || '',
           department: '',
           year: '',
         });
@@ -139,7 +139,7 @@ export default function ComponentCart() {
                         <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                        <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Phone</FormLabel><FormControl><Input placeholder="e.g., 9876543210" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="department" render={({ field }) => (
                         <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>
