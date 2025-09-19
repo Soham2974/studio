@@ -43,6 +43,7 @@ type Action =
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
   | { type: 'SET_USERS'; payload: User[] }
+  | { type: 'SET_USER_DETAILS'; payload: UserDetails | null }
   | { type: 'SET_DATA_LOADED'; payload: boolean };
 
 const initialState: AppState = {
@@ -71,6 +72,8 @@ function appReducer(state: AppState, action: Action): AppState {
         return { ...state, requests: action.payload };
     case 'SET_USERS':
         return { ...state, users: action.payload };
+    case 'SET_USER_DETAILS':
+        return { ...state, userDetails: action.payload };
     case 'SET_DATA_LOADED':
         return { ...state, isDataLoaded: action.payload };
     default:
@@ -93,11 +96,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
-      if (role === 'user') {
+      // For demo, if user logs in and there are users, use the first one.
+      // In a real app, this would be determined by the login process.
+      if (role === 'user' && state.users.length > 0) {
           const demoUser = state.users[0];
           if(demoUser) {
-            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year, phoneNumber: demoUser.phoneNumber };
+            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year, phoneNumber: demoUser.phoneNumber, email: demoUser.email };
           }
+      } else if (role === 'user') {
+        userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
   }
@@ -138,7 +145,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: { purpose: string }, userDetails: UserDetails) => {
+  const submitRequest = (details: { purpose: string }, userDetails: UserDetails & { email: string }) => {
+    // Find if user exists, if not, create one
+    let user = state.users.find(u => u.email === userDetails.email);
+    if (!user) {
+        const newUser: User = {
+            id: `user-${Date.now()}`,
+            createdAt: new Date(),
+            ...userDetails
+        };
+        dispatch({ type: 'SET_USERS', payload: [...state.users, newUser] });
+    } else {
+        // If user details from form are different, update them
+        const updatedUser = { ...user, ...userDetails };
+        const newUsers = state.users.map(u => u.id === updatedUser.id ? updatedUser : u);
+        dispatch({ type: 'SET_USERS', payload: newUsers });
+    }
+    
+    // Update the userDetails in the context for the current session
+    dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
+
     const newRequest: ComponentRequest = {
       purpose: details.purpose,
       userName: userDetails.name,

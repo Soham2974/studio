@@ -18,6 +18,7 @@ import { z } from 'zod';
 const RequestFormSchema = z.object({
   purpose: z.string().min(1, "Purpose is required"),
   name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
   phoneNumber: z.string().regex(/^\+91[0-9]{10}$/, "Phone number must be in +91XXXXXXXXXX format"),
   department: z.string().min(1, "Department is required"),
   year: z.string().min(1, "Year is required"),
@@ -34,10 +35,11 @@ export default function ComponentCart() {
     resolver: zodResolver(RequestFormSchema),
     defaultValues: {
       purpose: '',
-      name: userDetails?.name || '',
-      phoneNumber: userDetails?.phoneNumber || '',
-      department: userDetails?.department || '',
-      year: userDetails?.year || '',
+      name: '',
+      phoneNumber: '',
+      department: '',
+      year: '',
+      email: '',
     }
   });
 
@@ -49,6 +51,7 @@ export default function ComponentCart() {
         phoneNumber: userDetails?.phoneNumber || '',
         department: userDetails?.department || '',
         year: userDetails?.year || '',
+        email: userDetails?.email || '',
       });
     }
   }, [userDetails, isFormOpen, form]);
@@ -127,6 +130,9 @@ export default function ComponentCart() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
                         <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="email" render={({ field }) => (
+                        <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>

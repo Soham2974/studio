@@ -51,4 +51,5 @@ export type UserDetails = {
     department: string;
     year: string;
     phoneNumber: string;
+    email: string;
 }
