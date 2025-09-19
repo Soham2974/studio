@@ -60,11 +60,11 @@ type Action =
   | { type: 'LOGIN'; payload: { role: 'admin' | 'user' } }
   | { type: 'LOGOUT' }
   | { type: 'SET_AUTH_USER'; payload: AuthUser | null }
+  | { type: 'SET_USER_DETAILS'; payload: UserDetails | null }
   | { type: 'SET_CART'; payload: CartItem[] }
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
   | { type: 'SET_USERS'; payload: User[] }
-  | { type: 'SET_USER_DETAILS'; payload: UserDetails | null }
   | { type: 'SET_DATA_LOADED'; payload: boolean };
 
 const initialState: AppState = {
@@ -86,6 +86,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, userRole: null, userDetails: null, cart: [] };
     case 'SET_AUTH_USER':
       return { ...state, authUser: action.payload };
+    case 'SET_USER_DETAILS':
+        return { ...state, userDetails: action.payload };
     case 'SET_CART':
       return { ...state, cart: action.payload };
     case 'SET_COMPONENTS':
@@ -94,8 +96,6 @@ function appReducer(state: AppState, action: Action): AppState {
         return { ...state, requests: action.payload };
     case 'SET_USERS':
         return { ...state, users: action.payload };
-    case 'SET_USER_DETAILS':
-        return { ...state, userDetails: action.payload };
     case 'SET_DATA_LOADED':
         return { ...state, isDataLoaded: action.payload };
     default:
@@ -124,7 +124,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (user) {
         dispatch({ type: 'SET_AUTH_USER', payload: user });
         
-        // Fetch user details from Firestore
         const userDocRef = doc(db, "users", user.uid);
         const unsubscribeUserDetails = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
@@ -133,13 +132,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'SET_USER_DETAILS', payload: null });
           }
         });
-        
-        // Don't forget to return the unsubscribe function for user details
-        // but since we are in an auth listener, this is tricky.
-        // For now, we assume user details don't change often after login.
       } else {
-        // No user is signed in, so attempt to sign in anonymously.
-        await signInAnonymously(auth);
+        try {
+          // No user is signed in, so attempt to sign in anonymously.
+          await signInAnonymously(auth);
+        } catch (error: any) {
+            if (error.code === 'auth/configuration-not-found') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Firebase Auth Error',
+                    description: 'Anonymous sign-in is not enabled. Please enable it in your Firebase console.',
+                    duration: 10000,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Authentication Error',
+                    description: 'Could not sign in anonymously. Please check your Firebase config.',
+                });
+            }
+          console.error("Anonymous sign-in error:", error);
+        }
       }
     });
 
@@ -188,6 +201,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const login = (role: 'admin' | 'user') => {
+      if (!state.authUser) {
+         toast({ variant: 'destructive', title: "Authentication Not Ready", description: "Please wait a moment for authentication to complete."});
+         return;
+      }
       dispatch({ type: 'LOGIN', payload: { role } });
   }
   const logout = () => dispatch({ type: 'LOGOUT' });
@@ -230,7 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const submitRequest = async (requestData: UserDetails & { purpose: string }) => {
     const { authUser } = state;
     if (!authUser) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "You are not signed in. Please refresh the page." });
+      toast({ variant: "destructive", title: "Authentication Error", description: "You must be signed in to submit a request." });
       return;
     }
     if (state.cart.length === 0) {
@@ -243,10 +260,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
         const userDocRef = doc(db, "users", authUser.uid);
         
-        // Save or update the user's details
         await setDoc(userDocRef, { ...userDetails, createdAt: serverTimestamp() }, { merge: true });
 
-        // Now, create the component request
         await addDoc(collection(db, 'requests'), {
             purpose: purpose,
             userId: authUser.uid,
@@ -426,3 +441,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
