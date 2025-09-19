@@ -42,13 +42,13 @@ export default function ComponentCart() {
   });
 
   useEffect(() => {
-    if (isFormOpen && userDetails) {
+    if (isFormOpen) {
       form.reset({
         purpose: '',
-        name: userDetails.name,
-        phoneNumber: userDetails.phoneNumber,
-        department: userDetails.department,
-        year: userDetails.year,
+        name: userDetails?.name || '',
+        phoneNumber: userDetails?.phoneNumber || '',
+        department: userDetails?.department || '',
+        year: userDetails?.year || '',
       });
     }
   }, [userDetails, isFormOpen, form]);
@@ -60,10 +60,6 @@ export default function ComponentCart() {
   });
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
-    if (!userDetails) {
-        toast({ variant: 'destructive', title: 'Login Error', description: 'Could not find user details to submit request.' });
-        return;
-    }
     const {purpose, ...requestUserDetails} = data;
     submitRequest({ purpose }, requestUserDetails);
     setIsFormOpen(false);
@@ -102,7 +98,7 @@ export default function ComponentCart() {
                   max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value))}
+                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value, 10))}
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />

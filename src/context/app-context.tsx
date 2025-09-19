@@ -94,8 +94,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
       if (role === 'user') {
-          // For demo purposes, we'll just pick the first user.
-          // In a real app, you'd have a proper user selection/login.
           const demoUser = state.users[0];
           if(demoUser) {
             userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year, phoneNumber: demoUser.phoneNumber };
@@ -141,10 +139,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
   const submitRequest = (details: { purpose: string }, userDetails: UserDetails) => {
-    if (!userDetails) {
-        toast({ variant: "destructive", title: "Error", description: "User details not found." });
-        return;
-    }
     const newRequest: ComponentRequest = {
       purpose: details.purpose,
       userName: userDetails.name,
