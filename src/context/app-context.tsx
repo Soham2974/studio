@@ -23,7 +23,7 @@ type AppContextType = AppState & {
   removeFromCart: (componentId: string) => void;
   updateCartQuantity: (componentId: string, quantity: number) => void;
   clearCart: () => void;
-  submitRequest: (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' >) => void;
+  submitRequest: (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' | 'phoneNumber' >) => void;
   addComponent: (component: Omit<Component, 'id'>) => void;
   updateComponent: (component: Component) => void;
   deleteComponent: (componentId: string) => void;
@@ -98,7 +98,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // In a real app, you'd have a proper user selection/login.
           const demoUser = state.users[0];
           if(demoUser) {
-            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year };
+            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year, phoneNumber: demoUser.phoneNumber };
           }
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
@@ -137,7 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year'>) => {
+  const submitRequest = (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' | 'phoneNumber'>) => {
     if (!state.userDetails) {
         toast({ variant: "destructive", title: "Error", description: "User details not found." });
         return;

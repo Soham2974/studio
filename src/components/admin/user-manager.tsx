@@ -10,8 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Edit } from 'lucide-react';
 import { useForm, SubmitHandler } from "react-hook-form";
 import type { User } from '@/lib/types';
+import { UserSchema } from '@/lib/types';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 type FormValues = Omit<User, 'id' | 'createdAt'>;
 
@@ -20,14 +23,13 @@ export default function UserManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  const { register, handleSubmit, reset, setValue } = useForm<FormValues>();
+  const form = useForm<FormValues>({
+    resolver: zodResolver(UserSchema),
+  });
 
   const openForm = (user: User) => {
     setEditingUser(user);
-    setValue('name', user.name);
-    setValue('email', user.email);
-    setValue('department', user.department);
-    setValue('year', user.year);
+    form.reset(user);
     setIsFormOpen(true);
   };
   
@@ -36,7 +38,7 @@ export default function UserManager() {
       updateUser({ ...editingUser, ...data });
     }
     setIsFormOpen(false);
-    reset();
+    form.reset();
   };
 
   return (
@@ -49,28 +51,79 @@ export default function UserManager() {
               Update the details of the registered member.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" {...register('name', { required: true })} />
-            </div>
-             <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register('email', { required: true })} />
-            </div>
-            <div>
-              <Label htmlFor="department">Department</Label>
-              <Input id="department" {...register('department', { required: true })} />
-            </div>
-            <div>
-              <Label htmlFor="year">Year of Study</Label>
-              <Input id="year" {...register('year', { required: true })} />
-            </div>
-            <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-              <Button type="submit" variant="accent">Save Changes</Button>
-            </DialogFooter>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Year of Study</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                <Button type="submit" variant="accent">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
       <div className="rounded-md border">
@@ -78,6 +131,7 @@ export default function UserManager() {
           <TableHeader>
             <TableRow>
               <TableHead>Member</TableHead>
+              <TableHead>Contact</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Year</TableHead>
               <TableHead className="text-right">Joined On</TableHead>
@@ -92,11 +146,14 @@ export default function UserManager() {
                       <Avatar>
                           <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
+                      <p className="font-medium">{user.name}</p>
                   </div>
+                </TableCell>
+                <TableCell>
+                    <div>
+                        <p className="text-sm">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">{user.phoneNumber}</p>
+                    </div>
                 </TableCell>
                 <TableCell>{user.department}</TableCell>
                 <TableCell>{user.year}</TableCell>
