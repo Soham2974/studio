@@ -5,7 +5,6 @@ import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Send, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -35,15 +34,21 @@ export default function ComponentCart() {
     resolver: zodResolver(RequestFormSchema),
     defaultValues: {
       purpose: '',
-      ...userDetails
+      name: userDetails?.name || '',
+      phoneNumber: userDetails?.phoneNumber || '',
+      department: userDetails?.department || '',
+      year: userDetails?.year || '',
     }
   });
 
   useEffect(() => {
-    if (userDetails) {
+    if (isFormOpen && userDetails) {
       form.reset({
         purpose: '',
-        ...userDetails
+        name: userDetails.name,
+        phoneNumber: userDetails.phoneNumber,
+        department: userDetails.department,
+        year: userDetails.year,
       });
     }
   }, [userDetails, isFormOpen, form]);
