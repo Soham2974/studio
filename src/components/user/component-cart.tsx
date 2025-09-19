@@ -11,17 +11,16 @@ import { Trash2, Send, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 type FormValues = {
-  userName: string;
-  department: string;
-  year: string;
   purpose: string;
 };
 
 export default function ComponentCart() {
-  const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart } = useAppContext();
+  const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, userDetails } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
   
   const { register, handleSubmit, reset } = useForm<FormValues>();
 
@@ -31,6 +30,10 @@ export default function ComponentCart() {
   });
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
+    if (!userDetails) {
+        toast({ variant: 'destructive', title: 'Login Error', description: 'Could not find user details to submit request.' });
+        return;
+    }
     submitRequest(data);
     setIsFormOpen(false);
     reset();
@@ -68,7 +71,7 @@ export default function ComponentCart() {
                   max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value) || 0)}
+                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value))}
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -90,21 +93,14 @@ export default function ComponentCart() {
                 <DialogHeader>
                     <DialogTitle className="font-headline">Submit Component Request</DialogTitle>
                     <DialogDescription>
-                        Please provide your details and the purpose for this request.
+                        Your details are linked below. Please provide the purpose for this request.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div>
-                        <Label htmlFor="userName">Full Name</Label>
-                        <Input id="userName" {...register('userName', { required: true })} />
-                    </div>
-                    <div>
-                        <Label htmlFor="department">Department</Label>
-                        <Input id="department" {...register('department', { required: true })} />
-                    </div>
-                     <div>
-                        <Label htmlFor="year">Year of Study</Label>
-                        <Input id="year" {...register('year', { required: true })} />
+                    <div className="p-3 rounded-md bg-muted/50 text-sm">
+                        <p><strong>Name:</strong> {userDetails?.name}</p>
+                        <p><strong>Department:</strong> {userDetails?.department}</p>
+                        <p><strong>Year:</strong> {userDetails?.year}</p>
                     </div>
                     <div>
                         <Label htmlFor="purpose">Purpose of Use</Label>

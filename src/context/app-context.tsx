@@ -1,13 +1,15 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback, useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import type { UserRole, Component, CartItem, ComponentRequest, User } from '@/lib/types';
+import type { UserRole, Component, CartItem, ComponentRequest, User, UserDetails } from '@/lib/types';
 import { initialComponents, initialRequests, initialUsers } from '@/lib/mock-data';
 import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
 
 type AppState = {
   userRole: UserRole;
+  userDetails: UserDetails | null;
+  isDataLoaded: boolean;
   components: Component[];
   cart: CartItem[];
   requests: ComponentRequest[];
@@ -21,38 +23,44 @@ type AppContextType = AppState & {
   removeFromCart: (componentId: string) => void;
   updateCartQuantity: (componentId: string, quantity: number) => void;
   clearCart: () => void;
-  submitRequest: (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt'>) => void;
+  submitRequest: (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' >) => void;
   addComponent: (component: Omit<Component, 'id'>) => void;
   updateComponent: (component: Component) => void;
   deleteComponent: (componentId: string) => void;
+  updateUser: (user: User) => void;
   approveRequest: (requestId: string) => Promise<void>;
   rejectRequest: (requestId: string) => void;
+  updateReturnQuantity: (requestId: string, componentId: string, returnedQuantity: number) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
-  | { type: 'LOGIN'; payload: 'admin' | 'user' }
+  | { type: 'LOGIN'; payload: { role: 'admin' | 'user', userDetails: UserDetails | null } }
   | { type: 'LOGOUT' }
   | { type: 'SET_CART'; payload: CartItem[] }
   | { type: 'ADD_REQUEST'; payload: ComponentRequest }
   | { type: 'SET_COMPONENTS'; payload: Component[] }
-  | { type: 'SET_REQUESTS'; payload: ComponentRequest[] };
+  | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
+  | { type: 'SET_USERS'; payload: User[] }
+  | { type: 'SET_DATA_LOADED'; payload: boolean };
 
 const initialState: AppState = {
   userRole: null,
-  components: initialComponents,
+  userDetails: null,
+  isDataLoaded: false,
+  components: [],
   cart: [],
-  requests: initialRequests,
-  users: initialUsers,
+  requests: [],
+  users: [],
 };
 
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'LOGIN':
-      return { ...state, userRole: action.payload };
+      return { ...state, userRole: action.payload.role, userDetails: action.payload.userDetails };
     case 'LOGOUT':
-      return { ...state, userRole: null, cart: [] };
+      return { ...state, userRole: null, userDetails: null, cart: [] };
     case 'SET_CART':
       return { ...state, cart: action.payload };
     case 'ADD_REQUEST':
@@ -61,6 +69,10 @@ function appReducer(state: AppState, action: Action): AppState {
         return { ...state, components: action.payload };
     case 'SET_REQUESTS':
         return { ...state, requests: action.payload };
+    case 'SET_USERS':
+        return { ...state, users: action.payload };
+    case 'SET_DATA_LOADED':
+        return { ...state, isDataLoaded: action.payload };
     default:
       return state;
   }
@@ -69,8 +81,28 @@ function appReducer(state: AppState, action: Action): AppState {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const { toast } = useToast();
+  
+  useEffect(() => {
+    // Simulate loading data from local storage or an API
+    dispatch({ type: 'SET_COMPONENTS', payload: initialComponents });
+    dispatch({ type: 'SET_REQUESTS', payload: initialRequests });
+    dispatch({ type: 'SET_USERS', payload: initialUsers });
+    dispatch({ type: 'SET_DATA_LOADED', payload: true });
+  }, []);
 
-  const login = (role: 'admin' | 'user') => dispatch({ type: 'LOGIN', payload: role });
+
+  const login = (role: 'admin' | 'user') => {
+      let userDetails: UserDetails | null = null;
+      if (role === 'user') {
+          // For demo purposes, we'll just pick the first user.
+          // In a real app, you'd have a proper user selection/login.
+          const demoUser = state.users[0];
+          if(demoUser) {
+            userDetails = { name: demoUser.name, department: demoUser.department, year: demoUser.year };
+          }
+      }
+      dispatch({ type: 'LOGIN', payload: { role, userDetails } });
+  }
   const logout = () => dispatch({ type: 'LOGOUT' });
 
   const addToCart = (componentId: string, quantity: number) => {
@@ -84,7 +116,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       newCart = [...state.cart, { componentId, quantity }];
     }
     dispatch({ type: 'SET_CART', payload: newCart });
-    toast({ title: "Added to cart", description: `Added ${quantity} item(s).` });
   };
 
   const removeFromCart = (componentId: string) => {
@@ -93,11 +124,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const updateCartQuantity = (componentId: string, quantity: number) => {
-    if (quantity <= 0) {
+    const numQuantity = Number(quantity);
+    if (isNaN(numQuantity) || numQuantity <= 0) {
       removeFromCart(componentId);
     } else {
       const newCart = state.cart.map(item =>
-        item.componentId === componentId ? { ...item, quantity } : item
+        item.componentId === componentId ? { ...item, quantity: numQuantity } : item
       );
       dispatch({ type: 'SET_CART', payload: newCart });
     }
@@ -105,13 +137,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt'>) => {
+  const submitRequest = (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year'>) => {
+    if (!state.userDetails) {
+        toast({ variant: "destructive", title: "Error", description: "User details not found." });
+        return;
+    }
     const newRequest: ComponentRequest = {
       ...details,
+      ...state.userDetails,
       id: `req-${Date.now()}`,
       items: state.cart.map(item => ({
         ...item,
         name: state.components.find(c => c.id === item.componentId)?.name || 'Unknown',
+        returnedQuantity: 0,
       })),
       status: 'pending',
       createdAt: new Date(),
@@ -137,6 +175,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newComponents = state.components.filter(c => c.id !== componentId);
     dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
     toast({ title: 'Component Deleted', variant: 'destructive' });
+  };
+
+  const updateUser = (updatedUser: User) => {
+    const newUsers = state.users.map(u => u.id === updatedUser.id ? updatedUser : u);
+    dispatch({ type: 'SET_USERS', payload: newUsers });
+    toast({ title: 'User Updated', description: `Details for ${updatedUser.name} have been updated.` });
   };
 
   const approveRequest = useCallback(async (requestId: string) => {
@@ -192,6 +236,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: 'Request Rejected', variant: 'destructive' });
   };
 
+  const updateReturnQuantity = (requestId: string, componentId: string, returnedQuantity: number) => {
+    const request = state.requests.find(r => r.id === requestId);
+    if (!request) return;
+
+    const itemToUpdate = request.items.find(i => i.componentId === componentId);
+    const component = state.components.find(c => c.id === componentId);
+    if (!itemToUpdate || !component) return;
+
+    const currentReturned = itemToUpdate.returnedQuantity || 0;
+    const newReturned = currentReturned + returnedQuantity;
+    const maxReturnable = itemToUpdate.quantity;
+
+    if(returnedQuantity <= 0) return;
+    
+    if (newReturned > maxReturnable) {
+        toast({ variant: 'destructive', title: 'Error', description: `Cannot return more than was borrowed.` });
+        return;
+    }
+
+    // Update component inventory
+    const newComponents = state.components.map(c => 
+        c.id === componentId ? { ...c, quantity: c.quantity + returnedQuantity } : c
+    );
+    dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
+
+    // Update request item's returned quantity
+    const newRequests = state.requests.map(r => {
+        if (r.id === requestId) {
+            const newItems = r.items.map(i => 
+                i.componentId === componentId ? { ...i, returnedQuantity: newReturned } : i
+            );
+            
+            const totalRequested = newItems.reduce((sum, item) => sum + item.quantity, 0);
+            const totalReturned = newItems.reduce((sum, item) => sum + (item.returnedQuantity || 0), 0);
+
+            let newStatus: ComponentRequest['status'] = 'partially-returned';
+            if (totalReturned >= totalRequested) {
+                newStatus = 'returned';
+            }
+
+            return { ...r, items: newItems, status: newStatus };
+        }
+        return r;
+    });
+    dispatch({ type: 'SET_REQUESTS', payload: newRequests });
+    toast({ title: 'Return Processed', description: `${returnedQuantity} x ${component.name} returned to inventory.` });
+  };
+
 
   return (
     <AppContext.Provider value={{ 
@@ -206,8 +298,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addComponent,
         updateComponent,
         deleteComponent,
+        updateUser,
         approveRequest,
         rejectRequest,
+        updateReturnQuantity,
     }}>
       {children}
     </AppContext.Provider>

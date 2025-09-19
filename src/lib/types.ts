@@ -13,14 +13,19 @@ export type CartItem = {
   quantity: number;
 };
 
+export type ComponentRequestItem = CartItem & { 
+  name: string;
+  returnedQuantity: number;
+};
+
 export type ComponentRequest = {
   id:string;
   userName: string;
   department: string;
   year: string;
   purpose: string;
-  items: (CartItem & { name: string })[];
-  status: 'pending' | 'approved' | 'rejected';
+  items: ComponentRequestItem[];
+  status: 'pending' | 'approved' | 'rejected' | 'partially-returned' | 'returned';
   createdAt: Date;
   approvedAt?: Date;
 };
@@ -35,3 +40,9 @@ export type User = {
     year: string;
     createdAt: Date;
 };
+
+export type UserDetails = {
+    name: string;
+    department: string;
+    year: string;
+}

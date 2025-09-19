@@ -11,16 +11,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userRole } = useAppContext();
+  const { userRole, isDataLoaded } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (userRole === null) {
+    if (isDataLoaded && userRole === null) {
       router.replace('/');
     }
-  }, [userRole, router]);
+  }, [userRole, isDataLoaded, router]);
 
-  if (!userRole) {
+  if (!isDataLoaded || !userRole) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

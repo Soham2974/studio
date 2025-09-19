@@ -19,8 +19,8 @@ export const initialRequests: ComponentRequest[] = [
     year: '3rd',
     purpose: 'Senior design project involving an automated plant watering system.',
     items: [
-      { componentId: '1', name: 'Arduino Uno', quantity: 2 },
-      { componentId: '7', name: 'DHT11 Sensor', quantity: 3 },
+      { componentId: '1', name: 'Arduino Uno', quantity: 2, returnedQuantity: 0 },
+      { componentId: '7', name: 'DHT11 Sensor', quantity: 3, returnedQuantity: 0 },
     ],
     status: 'pending',
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
@@ -32,25 +32,38 @@ export const initialRequests: ComponentRequest[] = [
     year: '2nd',
     purpose: 'Personal project to build a small robot arm.',
     items: [
-      { componentId: '6', name: 'Raspberry Pi 4', quantity: 1 },
-      { componentId: '5', name: 'SG90 Micro Servo', quantity: 4 },
+      { componentId: '6', name: 'Raspberry Pi 4', quantity: 1, returnedQuantity: 0 },
+      { componentId: '5', name: 'SG90 Micro Servo', quantity: 4, returnedQuantity: 0 },
     ],
     status: 'pending',
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
   },
-    {
+  {
     id: 'req-3',
     userName: 'Charlie Brown',
     department: 'Mechatronics',
     year: '4th',
     purpose: 'For the annual robotics competition. Need to build a line-following robot.',
     items: [
-      { componentId: '1', name: 'Arduino Uno', quantity: 1 },
-      { componentId: '4', name: 'HC-SR04 Ultrasonic Sensor', quantity: 2 },
+      { componentId: '1', name: 'Arduino Uno', quantity: 1, returnedQuantity: 1 },
+      { componentId: '4', name: 'HC-SR04 Ultrasonic Sensor', quantity: 2, returnedQuantity: 0 },
     ],
-    status: 'approved',
+    status: 'partially-returned',
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     approvedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+  },
+  {
+    id: 'req-4',
+    userName: 'Alice Johnson',
+    department: 'Electrical Engineering',
+    year: '3rd',
+    purpose: 'Workshop for junior members on IoT basics.',
+    items: [
+      { componentId: '2', name: 'ESP32-WROOM-32', quantity: 5, returnedQuantity: 5 },
+    ],
+    status: 'returned',
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    approvedAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000), // 28 days ago
   },
 ];
 

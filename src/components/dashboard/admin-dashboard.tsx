@@ -2,17 +2,18 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shield, ListChecks, FileText, Users } from 'lucide-react';
+import { Shield, ListChecks, FileText, Users, Undo2 } from 'lucide-react';
 import InventoryManager from '@/components/admin/inventory-manager';
 import RequestManager from '@/components/admin/request-manager';
 import ReportGenerator from '@/components/admin/report-generator';
 import UserManager from '@/components/admin/user-manager';
+import ReturnsManager from '@/components/admin/returns-manager';
 
 export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-4 lg:p-8">
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="mb-4 grid w-full grid-cols-4">
+        <TabsList className="mb-4 grid w-full grid-cols-5">
           <TabsTrigger value="inventory">
             <Shield className="mr-2 h-4 w-4" />
             Inventory
@@ -20,6 +21,10 @@ export default function AdminDashboard() {
           <TabsTrigger value="requests">
             <ListChecks className="mr-2 h-4 w-4" />
             Requests
+          </TabsTrigger>
+          <TabsTrigger value="returns">
+            <Undo2 className="mr-2 h-4 w-4" />
+            Returns
           </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="mr-2 h-4 w-4" />
@@ -52,11 +57,22 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+         <TabsContent value="returns">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Manage Returns</CardTitle>
+                    <CardDescription>Track and process returned components from members.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReturnsManager />
+                </CardContent>
+            </Card>
+        </TabsContent>
         <TabsContent value="users">
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">User Management</CardTitle>
-                    <CardDescription>View details of all registered members.</CardDescription>
+                    <CardDescription>View and edit details of all registered members.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <UserManager />
@@ -66,8 +82,8 @@ export default function AdminDashboard() {
         <TabsContent value="report">
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Generate Report</CardTitle>
-              <CardDescription>Create a summary of approved components for a specific period.</CardDescription>
+              <CardTitle className="font-headline">Request Report</CardTitle>
+              <CardDescription>Generate a detailed log of component requests for a specific period.</CardDescription>
             </CardHeader>
             <CardContent>
               <ReportGenerator />
