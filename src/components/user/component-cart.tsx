@@ -43,24 +43,26 @@ export default function ComponentCart() {
   });
 
   useEffect(() => {
-    if (userDetails && isFormOpen) {
-      form.reset({
-        purpose: '',
-        name: userDetails.name || '',
-        email: userDetails.email || '',
-        phoneNumber: userDetails.phoneNumber || '',
-        department: userDetails.department || '',
-        year: userDetails.year || '',
-      });
-    } else if (isFormOpen) {
-      form.reset({
-        purpose: '',
-        name: '',
-        email: '',
-        phoneNumber: '',
-        department: '',
-        year: '',
-      });
+    if (isFormOpen) {
+      if (userDetails) {
+        form.reset({
+          purpose: '',
+          name: userDetails.name || '',
+          email: userDetails.email || '',
+          phoneNumber: userDetails.phoneNumber || '',
+          department: userDetails.department || '',
+          year: userDetails.year || '',
+        });
+      } else {
+        form.reset({
+          purpose: '',
+          name: '',
+          email: '',
+          phoneNumber: '',
+          department: '',
+          year: '',
+        });
+      }
     }
   }, [userDetails, isFormOpen, form]);
 
@@ -73,7 +75,6 @@ export default function ComponentCart() {
   const onSubmit: SubmitHandler<FormValues> = (data) => {
     submitRequest(data);
     setIsFormOpen(false);
-    form.reset();
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
