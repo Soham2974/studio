@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { z } from 'zod';
 type FormValues = UserDetails & { purpose: string };
 
 export default function ComponentCart() {
-  const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, userDetails } = useAppContext();
+  const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, authUser, users } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   
   const form = useForm<FormValues>({
@@ -37,15 +38,16 @@ export default function ComponentCart() {
   });
 
   useEffect(() => {
-    if (isFormOpen) {
-      if (userDetails) {
+    if (isFormOpen && authUser) {
+      const currentUser = users.find(u => u.id === authUser.uid);
+      if (currentUser) {
         form.reset({
           purpose: '',
-          name: userDetails.name || '',
-          email: userDetails.email || '',
-          phoneNumber: userDetails.phoneNumber || '',
-          department: userDetails.department || '',
-          year: userDetails.year || '',
+          name: currentUser.name || '',
+          email: currentUser.email || '',
+          phoneNumber: currentUser.phoneNumber || '',
+          department: currentUser.department || '',
+          year: currentUser.year || '',
         });
       } else {
         form.reset({
@@ -58,7 +60,7 @@ export default function ComponentCart() {
         });
       }
     }
-  }, [userDetails, isFormOpen, form]);
+  }, [authUser, users, isFormOpen, form]);
 
 
   const cartDetails = cart.map(item => {

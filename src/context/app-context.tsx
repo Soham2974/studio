@@ -27,7 +27,6 @@ import { Cpu, CircuitBoard, Droplets, HardDrive, MemoryStick, RadioTower, Zap } 
 type AppState = {
   userRole: UserRole;
   authUser: AuthUser | null;
-  userDetails: UserDetails | null;
   isDataLoaded: boolean;
   components: Component[];
   cart: CartItem[];
@@ -60,7 +59,6 @@ type Action =
   | { type: 'LOGIN'; payload: { role: 'admin' | 'user' } }
   | { type: 'LOGOUT' }
   | { type: 'SET_AUTH_USER'; payload: AuthUser | null }
-  | { type: 'SET_USER_DETAILS'; payload: UserDetails | null }
   | { type: 'SET_CART'; payload: CartItem[] }
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
@@ -70,7 +68,6 @@ type Action =
 const initialState: AppState = {
   userRole: null,
   authUser: null,
-  userDetails: null,
   isDataLoaded: false,
   components: [],
   cart: [],
@@ -83,11 +80,9 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'LOGIN':
       return { ...state, userRole: action.payload.role };
     case 'LOGOUT':
-      return { ...state, userRole: null, userDetails: null, cart: [] };
+      return { ...state, userRole: null, cart: [] };
     case 'SET_AUTH_USER':
       return { ...state, authUser: action.payload };
-    case 'SET_USER_DETAILS':
-        return { ...state, userDetails: action.payload };
     case 'SET_CART':
       return { ...state, cart: action.payload };
     case 'SET_COMPONENTS':
@@ -123,15 +118,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         dispatch({ type: 'SET_AUTH_USER', payload: user });
-        
-        const userDocRef = doc(db, "users", user.uid);
-        const unsubscribeUserDetails = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            dispatch({ type: 'SET_USER_DETAILS', payload: doc.data() as UserDetails });
-          } else {
-            dispatch({ type: 'SET_USER_DETAILS', payload: null });
-          }
-        });
       } else {
         try {
           // No user is signed in, so attempt to sign in anonymously.
@@ -259,7 +245,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
         const userDocRef = doc(db, "users", authUser.uid);
-        
         await setDoc(userDocRef, { ...userDetails, createdAt: serverTimestamp() }, { merge: true });
 
         await addDoc(collection(db, 'requests'), {
@@ -441,5 +426,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    
