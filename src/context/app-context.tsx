@@ -23,7 +23,7 @@ type AppContextType = AppState & {
   removeFromCart: (componentId: string) => void;
   updateCartQuantity: (componentId: string, quantity: number) => void;
   clearCart: () => void;
-  submitRequest: (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' | 'phoneNumber' >) => void;
+  submitRequest: (details: { purpose: string }, userDetails: UserDetails) => void;
   addComponent: (component: Omit<Component, 'id'>) => void;
   updateComponent: (component: Component) => void;
   deleteComponent: (componentId: string) => void;
@@ -125,7 +125,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateCartQuantity = (componentId: string, quantity: number) => {
     const numQuantity = Number(quantity);
-    if (isNaN(numQuantity) || numQuantity <= 0) {
+    if (isNaN(numQuantity)) {
+        return;
+    }
+    if (numQuantity <= 0) {
       removeFromCart(componentId);
     } else {
       const newCart = state.cart.map(item =>
@@ -137,14 +140,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: Omit<ComponentRequest, 'id' | 'items' | 'status' | 'createdAt' | 'approvedAt' | 'userName' | 'department' | 'year' | 'phoneNumber'>) => {
-    if (!state.userDetails) {
+  const submitRequest = (details: { purpose: string }, userDetails: UserDetails) => {
+    if (!userDetails) {
         toast({ variant: "destructive", title: "Error", description: "User details not found." });
         return;
     }
     const newRequest: ComponentRequest = {
-      ...details,
-      ...state.userDetails,
+      purpose: details.purpose,
+      userName: userDetails.name,
+      department: userDetails.department,
+      year: userDetails.year,
       id: `req-${Date.now()}`,
       items: state.cart.map(item => ({
         ...item,

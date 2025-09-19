@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,17 +12,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-type FormValues = {
-  purpose: string;
-};
+const RequestFormSchema = z.object({
+  purpose: z.string().min(1, "Purpose is required"),
+  name: z.string().min(1, "Name is required"),
+  phoneNumber: z.string().regex(/^\+91[0-9]{10}$/, "Phone number must be in +91XXXXXXXXXX format"),
+  department: z.string().min(1, "Department is required"),
+  year: z.string().min(1, "Year is required"),
+});
+
+type FormValues = z.infer<typeof RequestFormSchema>;
 
 export default function ComponentCart() {
   const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, userDetails } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
   
-  const { register, handleSubmit, reset } = useForm<FormValues>();
+  const form = useForm<FormValues>({
+    resolver: zodResolver(RequestFormSchema),
+    defaultValues: {
+      purpose: '',
+      ...userDetails
+    }
+  });
+
+  useEffect(() => {
+    if (userDetails) {
+      form.reset({
+        purpose: '',
+        ...userDetails
+      });
+    }
+  }, [userDetails, isFormOpen, form]);
+
 
   const cartDetails = cart.map(item => {
     const component = components.find(c => c.id === item.componentId);
@@ -34,9 +59,10 @@ export default function ComponentCart() {
         toast({ variant: 'destructive', title: 'Login Error', description: 'Could not find user details to submit request.' });
         return;
     }
-    submitRequest(data);
+    const {purpose, ...requestUserDetails} = data;
+    submitRequest({ purpose }, requestUserDetails);
     setIsFormOpen(false);
-    reset();
+    form.reset();
   };
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -71,7 +97,7 @@ export default function ComponentCart() {
                   max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value) || 0)}
+                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value))}
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -93,25 +119,32 @@ export default function ComponentCart() {
                 <DialogHeader>
                     <DialogTitle className="font-headline">Submit Component Request</DialogTitle>
                     <DialogDescription>
-                        Your details are linked below. Please provide the purpose for this request.
+                        Please confirm your details and provide the purpose for this request.
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="p-3 rounded-md bg-muted/50 text-sm">
-                        <p><strong>Name:</strong> {userDetails?.name}</p>
-                        <p><strong>Phone:</strong> {userDetails?.phoneNumber}</p>
-                        <p><strong>Department:</strong> {userDetails?.department}</p>
-                        <p><strong>Year:</strong> {userDetails?.year}</p>
-                    </div>
-                    <div>
-                        <Label htmlFor="purpose">Purpose of Use</Label>
-                        <Textarea id="purpose" {...register('purpose', { required: true })} />
-                    </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                        <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                        <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="department" render={({ field }) => (
+                        <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="year" render={({ field }) => (
+                        <FormItem><FormLabel>Year</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="purpose" render={({ field }) => (
+                        <FormItem><FormLabel>Purpose of Use</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
                     <DialogFooter>
                       <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                       <Button type="submit" variant="accent">Confirm & Submit</Button>
                     </DialogFooter>
                 </form>
+                </Form>
             </DialogContent>
         </Dialog>
         <Button className="w-full" variant="outline" onClick={clearCart} disabled={cart.length === 0}>
