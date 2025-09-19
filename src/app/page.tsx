@@ -16,8 +16,16 @@ export default function Home() {
     }
   }, [userRole, isDataLoaded, router]);
 
-  if (!isDataLoaded || userRole) {
+  if (!isDataLoaded) {
     return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (userRole) {
+     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
