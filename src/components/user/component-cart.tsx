@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UserSchema } from '@/lib/types';
 import type { UserDetails } from '@/lib/types';
+import { z } from 'zod';
 
 type FormValues = UserDetails & { purpose: string };
 
@@ -135,7 +136,7 @@ export default function ComponentCart() {
                      <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-                     <FormField control={form-control} name="phoneNumber" render={({ field }) => (
+                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="department" render={({ field }) => (
