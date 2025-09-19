@@ -1,12 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import { z } from 'zod';
+import type { Timestamp } from 'firebase/firestore';
 
 export type Component = {
   id: string;
   name: string;
   description: string;
   quantity: number;
-  icon: ((props: React.SVGProps<SVGSVGElement>) => JSX.Element) | LucideIcon;
+  icon: ((props: React.SVGProps<SVGSVGElement>) => JSX.Element) | LucideIcon | string;
 };
 
 export type CartItem = {
@@ -21,14 +22,15 @@ export type ComponentRequestItem = CartItem & {
 
 export type ComponentRequest = {
   id:string;
+  userId: string;
   userName: string;
   department: string;
   year: string;
   purpose: string;
   items: ComponentRequestItem[];
   status: 'pending' | 'approved' | 'rejected' | 'partially-returned' | 'returned';
-  createdAt: Date;
-  approvedAt?: Date;
+  createdAt: Date | Timestamp;
+  approvedAt?: Date | Timestamp;
 };
 
 export type UserRole = 'admin' | 'user' | null;
@@ -43,7 +45,7 @@ export const UserSchema = z.object({
 
 export type User = z.infer<typeof UserSchema> & {
     id: string;
-    createdAt: Date;
+    createdAt: Date | Timestamp;
 };
 
 export type UserDetails = {

@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import type { Timestamp } from 'firebase/firestore';
 
 type FormValues = Omit<User, 'id' | 'createdAt'>;
 
@@ -29,7 +30,13 @@ export default function UserManager() {
 
   const openForm = (user: User) => {
     setEditingUser(user);
-    form.reset(user);
+    form.reset({
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      department: user.department,
+      year: user.year,
+    });
     setIsFormOpen(true);
   };
   
@@ -40,6 +47,12 @@ export default function UserManager() {
     setIsFormOpen(false);
     form.reset();
   };
+  
+  const formatDate = (date: Date | Timestamp | undefined) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    return format(dateObj, 'PP');
+  }
 
   return (
     <div>
@@ -157,7 +170,7 @@ export default function UserManager() {
                 </TableCell>
                 <TableCell>{user.department}</TableCell>
                 <TableCell>{user.year}</TableCell>
-                <TableCell className="text-right">{format(user.createdAt, 'PP')}</TableCell>
+                <TableCell className="text-right">{formatDate(user.createdAt)}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openForm(user)}>
                       <Edit className="h-4 w-4" />

@@ -9,14 +9,16 @@ import { format } from 'date-fns';
 import { subDays, subMonths, subYears } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
+import type { ComponentRequest } from '@/lib/types';
+import type { Timestamp } from 'firebase/firestore';
 
 type Period = '7d' | '1m' | '6m' | '1y' | 'all';
 
 export default function ReportGenerator() {
   const { requests } = useAppContext();
   const [period, setPeriod] = useState<Period>('7d');
-  
-  const getStatusVariant = (status: 'pending' | 'approved' | 'rejected' | 'partially-returned' | 'returned') => {
+
+  const getStatusVariant = (status: ComponentRequest['status']) => {
     switch (status) {
       case 'approved':
       case 'partially-returned':
@@ -31,7 +33,7 @@ export default function ReportGenerator() {
     }
   };
 
-  const getReturnStatus = (request: any) => {
+  const getReturnStatus = (request: ComponentRequest) => {
     if (request.status !== 'approved' && request.status !== 'partially-returned' && request.status !== 'returned') return 'N/A';
     
     const totalRequested = request.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
@@ -44,7 +46,9 @@ export default function ReportGenerator() {
 
   const filteredRequests = requests.filter(request => {
     if (period === 'all') return true;
-    const requestDate = request.approvedAt || request.createdAt;
+    const requestDate = (request.approvedAt || request.createdAt) as Timestamp;
+    if (!requestDate) return false;
+
     let startDate: Date;
     switch (period) {
       case '7d':
@@ -60,8 +64,14 @@ export default function ReportGenerator() {
         startDate = subYears(new Date(), 1);
         break;
     }
-    return requestDate >= startDate;
+    return requestDate.toDate() >= startDate;
   });
+  
+  const formatDate = (date: Date | Timestamp | undefined) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    return format(dateObj, 'PP');
+  }
 
   const handleDownload = () => {
     if (filteredRequests.length === 0) return;
@@ -85,7 +95,7 @@ export default function ReportGenerator() {
         .map(item => `"${item.name} x ${item.quantity}"`)
         .join('; ');
       
-      const date = format(request.approvedAt || request.createdAt, 'PP');
+      const date = formatDate(request.approvedAt || request.createdAt);
       const returnStatus = getReturnStatus(request);
       
       const values = [
@@ -161,7 +171,7 @@ export default function ReportGenerator() {
                     </div>
                 </TableCell>
                 <TableCell className="max-w-xs truncate">{request.purpose}</TableCell>
-                <TableCell>{format(request.approvedAt || request.createdAt, 'PP')}</TableCell>
+                <TableCell>{formatDate(request.approvedAt || request.createdAt)}</TableCell>
                 <TableCell>
                     <ul className="list-disc pl-4">
                         {request.items.map(item => <li key={item.componentId}>{item.name} &times; {item.quantity}</li>)}

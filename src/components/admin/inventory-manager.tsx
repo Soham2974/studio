@@ -27,7 +27,7 @@ export default function InventoryManager() {
       setValue('name', component.name);
       setValue('description', component.description);
       setValue('quantity', component.quantity);
-      const iconName = Object.entries(iconMap).find(([, IconComponent]) => IconComponent === component.icon)?.[0] || 'Cpu';
+      const iconName = Object.entries(iconMap).find(([, IconComponent]) => IconComponent === component.icon)?.[0] || (component.icon as string) || 'Cpu';
       setValue('icon', iconName);
     } else {
       setEditingComponent(null);
@@ -37,14 +37,17 @@ export default function InventoryManager() {
   };
   
   const onSubmit: SubmitHandler<FormValues> = (data) => {
-    const componentData = { 
-        ...data, 
-        icon: iconMap[data.icon as keyof typeof iconMap] || Cpu 
-    };
-
     if (editingComponent) {
-      updateComponent({ ...editingComponent, ...componentData });
+      const updatedData: Component = { 
+        ...editingComponent,
+        ...data, 
+        icon: iconMap[data.icon as keyof typeof iconMap] || Cpu,
+      };
+      updateComponent(updatedData);
     } else {
+      const componentData = { 
+          ...data,
+      };
       addComponent(componentData);
     }
     setIsFormOpen(false);
@@ -83,7 +86,7 @@ export default function InventoryManager() {
               </div>
               <div>
                 <Label htmlFor="icon">Icon</Label>
-                <select id="icon" {...register('icon')} className="w-full p-2 border rounded-md">
+                <select id="icon" {...register('icon')} className="w-full p-2 border rounded-md bg-background">
                   {Object.keys(iconMap).map(iconName => (
                     <option key={iconName} value={iconName}>{iconName}</option>
                   ))}
@@ -110,7 +113,7 @@ export default function InventoryManager() {
           </TableHeader>
           <TableBody>
             {components.map((component) => {
-                const Icon = component.icon;
+                const Icon = typeof component.icon === 'string' ? iconMap[component.icon as keyof typeof iconMap] || Cpu : component.icon;
                 return (
                     <TableRow key={component.id}>
                         <TableCell><Icon className="h-6 w-6 text-primary" /></TableCell>

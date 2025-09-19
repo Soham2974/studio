@@ -1,9 +1,25 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useCallback, useState, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import type { UserRole, Component, CartItem, ComponentRequest, User, UserDetails } from '@/lib/types';
 import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
+import { db } from '@/lib/firebase-config';
+import { 
+  collection, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  orderBy, 
+  where,
+  getDocs,
+  serverTimestamp,
+  Timestamp,
+} from "firebase/firestore";
+import { Cpu, CircuitBoard, Droplets, HardDrive, MemoryStick, RadioTower, Zap } from 'lucide-react';
 
 type AppState = {
   userRole: UserRole;
@@ -23,7 +39,7 @@ type AppContextType = AppState & {
   updateCartQuantity: (componentId: string, quantity: number) => void;
   clearCart: () => void;
   submitRequest: (details: { purpose: string }, userDetails: UserDetails) => void;
-  addComponent: (component: Omit<Component, 'id'>) => void;
+  addComponent: (component: Omit<Component, 'id' | 'icon'> & {icon: string}) => void;
   updateComponent: (component: Component) => void;
   deleteComponent: (componentId: string) => void;
   updateUser: (user: User) => void;
@@ -32,13 +48,14 @@ type AppContextType = AppState & {
   updateReturnQuantity: (requestId: string, componentId: string, returnedQuantity: number) => void;
 };
 
+const iconMap = { Cpu, CircuitBoard, Droplets, HardDrive, MemoryStick, RadioTower, Zap };
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
   | { type: 'LOGIN'; payload: { role: 'admin' | 'user', userDetails: UserDetails | null } }
   | { type: 'LOGOUT' }
   | { type: 'SET_CART'; payload: CartItem[] }
-  | { type: 'ADD_REQUEST'; payload: ComponentRequest }
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
   | { type: 'SET_USERS'; payload: User[] }
@@ -63,8 +80,6 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, userRole: null, userDetails: null, cart: [] };
     case 'SET_CART':
       return { ...state, cart: action.payload };
-    case 'ADD_REQUEST':
-      return { ...state, requests: [action.payload, ...state.requests] };
     case 'SET_COMPONENTS':
         return { ...state, components: action.payload };
     case 'SET_REQUESTS':
@@ -80,25 +95,62 @@ function appReducer(state: AppState, action: Action): AppState {
   }
 }
 
+const convertTimestamps = (docData: any) => {
+  const data = { ...docData };
+  for (const key in data) {
+    if (data[key] instanceof Timestamp) {
+      data[key] = data[key].toDate();
+    }
+  }
+  return data;
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const { toast } = useToast();
   
   useEffect(() => {
-    // In a real app, you would fetch initial data from a database here.
-    // For now, we'll start with empty arrays.
-    dispatch({ type: 'SET_COMPONENTS', payload: [] });
-    dispatch({ type: 'SET_REQUESTS', payload: [] });
-    dispatch({ type: 'SET_USERS', payload: [] });
+    dispatch({ type: 'SET_DATA_LOADED', payload: false });
+
+    const qComp = query(collection(db, "components"), orderBy("name"));
+    const unsubscribeComponents = onSnapshot(qComp, (querySnapshot) => {
+      const components = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const iconName = data.icon as string;
+        return { 
+          ...data, 
+          id: doc.id,
+          icon: iconMap[iconName as keyof typeof iconMap] || Cpu,
+        } as Component;
+      });
+      dispatch({ type: 'SET_COMPONENTS', payload: components });
+    });
+
+    const qReq = query(collection(db, "requests"), orderBy("createdAt", "desc"));
+    const unsubscribeRequests = onSnapshot(qReq, (querySnapshot) => {
+      const requests = querySnapshot.docs.map(doc => ({ ...convertTimestamps(doc.data()), id: doc.id }) as ComponentRequest);
+      dispatch({ type: 'SET_REQUESTS', payload: requests });
+    });
+
+    const qUsers = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const unsubscribeUsers = onSnapshot(qUsers, (querySnapshot) => {
+      const users = querySnapshot.docs.map(doc => ({ ...convertTimestamps(doc.data()), id: doc.id }) as User);
+      dispatch({ type: 'SET_USERS', payload: users });
+    });
+
     dispatch({ type: 'SET_DATA_LOADED', payload: true });
+    
+    return () => {
+      unsubscribeComponents();
+      unsubscribeRequests();
+      unsubscribeUsers();
+    };
   }, []);
 
 
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
       if (role === 'user') {
-        // In a real app, you would fetch user details after they log in.
-        // For now, we'll start with a blank slate for them to fill out.
         userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
@@ -140,65 +192,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = (details: { purpose: string }, userDetails: UserDetails) => {
-    let user = state.users.find(u => u.email === userDetails.email);
-    if (!user) {
-        const newUser: User = {
-            id: `user-${Date.now()}`,
-            createdAt: new Date(),
-            ...userDetails
-        };
-        const newUsers = [...state.users, newUser];
-        dispatch({ type: 'SET_USERS', payload: newUsers });
-        user = newUser; // Use the newly created user
+  const submitRequest = async (details: { purpose: string }, userDetails: UserDetails) => {
+    const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
+    const querySnapshot = await getDocs(userQuery);
+    let userId: string;
+
+    if (querySnapshot.empty) {
+      const userDoc = await addDoc(collection(db, "users"), {
+        ...userDetails,
+        createdAt: serverTimestamp(),
+      });
+      userId = userDoc.id;
     } else {
-        const updatedUser = { ...user, ...userDetails };
-        const newUsers = state.users.map(u => u.id === updatedUser.id ? updatedUser : u);
-        dispatch({ type: 'SET_USERS', payload: newUsers });
+      const userDoc = querySnapshot.docs[0];
+      userId = userDoc.id;
+      await updateDoc(doc(db, "users", userId), userDetails);
     }
     
     dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
 
-    const newRequest: ComponentRequest = {
+    await addDoc(collection(db, 'requests'), {
       ...details,
+      userId: userId,
       userName: userDetails.name,
       department: userDetails.department,
       year: userDetails.year,
-      id: `req-${Date.now()}`,
       items: state.cart.map(item => ({
         ...item,
         name: state.components.find(c => c.id === item.componentId)?.name || 'Unknown',
         returnedQuantity: 0,
       })),
       status: 'pending',
-      createdAt: new Date(),
-    };
-    dispatch({ type: 'ADD_REQUEST', payload: newRequest });
+      createdAt: serverTimestamp(),
+    });
+
     dispatch({ type: 'SET_CART', payload: [] });
     toast({ title: "Request Submitted", description: "Your component request has been sent for approval." });
   };
 
-  const addComponent = (component: Omit<Component, 'id'>) => {
-    const newComponent: Component = { ...component, id: `comp-${Date.now()}` };
-    dispatch({ type: 'SET_COMPONENTS', payload: [...state.components, newComponent]});
+  const addComponent = async (component: Omit<Component, 'id'|'icon'> & {icon: string}) => {
+    await addDoc(collection(db, 'components'), component);
     toast({ title: 'Component Added', description: `${component.name} has been added to the inventory.` });
   };
 
-  const updateComponent = (updatedComponent: Component) => {
-    const newComponents = state.components.map(c => c.id === updatedComponent.id ? updatedComponent : c);
-    dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
+  const updateComponent = async (updatedComponent: Component) => {
+    const { id, icon, ...data } = updatedComponent;
+    const iconName = Object.keys(iconMap).find(key => iconMap[key as keyof typeof iconMap] === icon) || 'Cpu';
+    await updateDoc(doc(db, 'components', id), { ...data, icon: iconName });
     toast({ title: 'Component Updated', description: `${updatedComponent.name} has been updated.` });
   };
 
-  const deleteComponent = (componentId: string) => {
-    const newComponents = state.components.filter(c => c.id !== componentId);
-    dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
+  const deleteComponent = async (componentId: string) => {
+    await deleteDoc(doc(db, 'components', componentId));
     toast({ title: 'Component Deleted', variant: 'destructive' });
   };
 
-  const updateUser = (updatedUser: User) => {
-    const newUsers = state.users.map(u => u.id === updatedUser.id ? updatedUser : u);
-    dispatch({ type: 'SET_USERS', payload: newUsers });
+  const updateUser = async (updatedUser: User) => {
+    const { id, createdAt, ...data } = updatedUser;
+    await updateDoc(doc(db, 'users', id), data);
     toast({ title: 'User Updated', description: `Details for ${updatedUser.name} have been updated.` });
   };
 
@@ -207,7 +258,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!request) return;
 
     let canApprove = true;
-    const updates: { componentId: string, newQuantity: number }[] = [];
 
     for (const item of request.items) {
       const component = state.components.find(c => c.id === item.componentId);
@@ -232,30 +282,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         canApprove = false;
         break;
       }
-      updates.push({ componentId: component.id, newQuantity: component.quantity - item.quantity });
     }
 
     if (canApprove) {
-      const newComponents = state.components.map(c => {
-        const update = updates.find(u => u.componentId === c.id);
-        return update ? { ...c, quantity: update.newQuantity } : c;
+      for (const item of request.items) {
+        const component = state.components.find(c => c.id === item.componentId)!;
+        await updateDoc(doc(db, 'components', component.id), {
+          quantity: component.quantity - item.quantity,
+        });
+      }
+      
+      await updateDoc(doc(db, 'requests', requestId), {
+        status: 'approved',
+        approvedAt: serverTimestamp(),
       });
-      dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
-
-      const newRequests = state.requests.map(r => r.id === requestId ? { ...r, status: 'approved' as const, approvedAt: new Date() } : r);
-      dispatch({ type: 'SET_REQUESTS', payload: newRequests });
       
       toast({ title: 'Request Approved', description: 'Inventory has been updated.' });
     }
   }, [state.requests, state.components, toast]);
 
-  const rejectRequest = (requestId: string) => {
-    const newRequests = state.requests.map(r => r.id === requestId ? { ...r, status: 'rejected' as const } : r);
-    dispatch({ type: 'SET_REQUESTS', payload: newRequests });
+  const rejectRequest = async (requestId: string) => {
+    await updateDoc(doc(db, 'requests', requestId), { status: 'rejected' });
     toast({ title: 'Request Rejected', variant: 'destructive' });
   };
 
-  const updateReturnQuantity = (requestId: string, componentId: string, returnedQuantity: number) => {
+  const updateReturnQuantity = async (requestId: string, componentId: string, returnedQuantity: number) => {
     const request = state.requests.find(r => r.id === requestId);
     if (!request) return;
 
@@ -274,32 +325,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    // Update component inventory
-    const newComponents = state.components.map(c => 
-        c.id === componentId ? { ...c, quantity: c.quantity + returnedQuantity } : c
-    );
-    dispatch({ type: 'SET_COMPONENTS', payload: newComponents });
-
-    // Update request item's returned quantity
-    const newRequests = state.requests.map(r => {
-        if (r.id === requestId) {
-            const newItems = r.items.map(i => 
-                i.componentId === componentId ? { ...i, returnedQuantity: newReturned } : i
-            );
-            
-            const totalRequested = newItems.reduce((sum, item) => sum + item.quantity, 0);
-            const totalReturned = newItems.reduce((sum, item) => sum + (item.returnedQuantity || 0), 0);
-
-            let newStatus: ComponentRequest['status'] = 'partially-returned';
-            if (totalReturned >= totalRequested) {
-                newStatus = 'returned';
-            }
-
-            return { ...r, items: newItems, status: newStatus };
-        }
-        return r;
+    await updateDoc(doc(db, 'components', componentId), {
+      quantity: component.quantity + returnedQuantity
     });
-    dispatch({ type: 'SET_REQUESTS', payload: newRequests });
+
+    const newItems = request.items.map(i => 
+        i.componentId === componentId ? { ...i, returnedQuantity: newReturned } : i
+    );
+    
+    const totalRequested = newItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalReturned = newItems.reduce((sum, item) => sum + (item.returnedQuantity || 0), 0);
+
+    let newStatus: ComponentRequest['status'] = 'partially-returned';
+    if (totalReturned >= totalRequested) {
+        newStatus = 'returned';
+    }
+
+    await updateDoc(doc(db, 'requests', requestId), {
+      items: newItems,
+      status: newStatus,
+    });
+    
     toast({ title: 'Return Processed', description: `${returnedQuantity} x ${component.name} returned to inventory.` });
   };
 

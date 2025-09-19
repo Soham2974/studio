@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import type { Timestamp } from 'firebase/firestore';
 
 export default function RequestManager() {
   const { requests, approveRequest, rejectRequest } = useAppContext();
@@ -21,6 +22,12 @@ export default function RequestManager() {
   const handleReject = (id: string) => {
     rejectRequest(id);
   };
+  
+  const formatDate = (date: Date | Timestamp | undefined) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    return format(dateObj, 'PP');
+  }
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
 
@@ -38,7 +45,7 @@ export default function RequestManager() {
                 <p className="font-semibold">{request.userName}</p>
                 <p className="text-sm text-muted-foreground">{request.department} - {request.year} Year</p>
               </div>
-              <Badge variant="secondary">{format(request.createdAt, 'PP')}</Badge>
+              <Badge variant="secondary">{formatDate(request.createdAt)}</Badge>
             </div>
           </AccordionTrigger>
           <AccordionContent>

@@ -5,15 +5,16 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import type { ComponentRequest } from '@/lib/types';
+import type { Timestamp } from 'firebase/firestore';
+
 
 export default function UserRequestHistory() {
   const { requests, userDetails } = useAppContext();
   
-  // Assuming a single user logs in, filter requests by their name.
-  // In a real app, you'd use a user ID.
   const userRequests = requests.filter(r => r.userName === userDetails?.name);
 
-  const getStatusVariant = (status: 'pending' | 'approved' | 'rejected' | 'partially-returned' | 'returned') => {
+  const getStatusVariant = (status: ComponentRequest['status']) => {
     switch (status) {
       case 'approved':
       case 'partially-returned':
@@ -27,6 +28,12 @@ export default function UserRequestHistory() {
         return 'outline';
     }
   };
+
+  const formatDate = (date: Date | Timestamp | undefined) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    return format(dateObj, 'PP');
+  }
 
   if (!userDetails || userRequests.length === 0) {
     return (
@@ -55,7 +62,7 @@ export default function UserRequestHistory() {
                 <AccordionTrigger>
                     <div className="flex w-full items-center justify-between pr-4">
                         <div className="text-left">
-                            <p className="font-semibold">Request from {format(request.createdAt, 'PP')}</p>
+                            <p className="font-semibold">Request from {formatDate(request.createdAt)}</p>
                             <p className="text-sm text-muted-foreground max-w-md truncate">Purpose: {request.purpose}</p>
                         </div>
                         <Badge variant={getStatusVariant(request.status)}>{request.status}</Badge>
@@ -78,7 +85,7 @@ export default function UserRequestHistory() {
                         </ul>
                     </div>
                     {request.status === 'approved' && request.approvedAt &&
-                        <p className="text-sm text-muted-foreground">Approved on: {format(request.approvedAt, 'PP')}</p>
+                        <p className="text-sm text-muted-foreground">Approved on: {formatDate(request.approvedAt)}</p>
                     }
                     </div>
                 </AccordionContent>

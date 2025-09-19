@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Save } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ComponentRequest } from '@/lib/types';
+import type { Timestamp } from 'firebase/firestore';
 
 export default function ReturnsManager() {
   const { requests, updateReturnQuantity } = useAppContext();
@@ -42,6 +43,12 @@ export default function ReturnsManager() {
       });
     }
   };
+
+  const formatDate = (date: Date | Timestamp | undefined) => {
+    if (!date) return '';
+    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    return format(dateObj, 'PP');
+  }
   
   if (approvedRequests.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No items are currently borrowed.</p>;
@@ -63,7 +70,7 @@ export default function ReturnsManager() {
                     <p className="text-sm text-muted-foreground">{request.department} - {request.year} Year</p>
                 </div>
                 { isFullyReturned ? <Badge>Fully Returned</Badge> : <Badge variant="outline">Borrowing</Badge>}
-                <span className="text-sm text-muted-foreground">{format(request.approvedAt!, 'PP')}</span>
+                <span className="text-sm text-muted-foreground">{formatDate(request.approvedAt)}</span>
                 </div>
             </AccordionTrigger>
             <AccordionContent>
