@@ -152,6 +152,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
       if (role === 'user') {
+        // Initialize with empty details, to be filled by the form
         userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
@@ -200,19 +201,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         let userId: string;
 
         if (querySnapshot.empty) {
-        const userDoc = await addDoc(collection(db, "users"), {
-            ...userDetails,
-            createdAt: serverTimestamp(),
-        });
-        userId = userDoc.id;
+            const userDocRef = await addDoc(collection(db, "users"), {
+                ...userDetails,
+                createdAt: serverTimestamp(),
+            });
+            userId = userDocRef.id;
         } else {
-        const userDoc = querySnapshot.docs[0];
-        userId = userDoc.id;
-        // Update user details if they have changed
-        await updateDoc(doc(db, "users", userId), userDetails);
+            const userDoc = querySnapshot.docs[0];
+            userId = userDoc.id;
+            // Update user details if they have changed
+            await updateDoc(doc(db, "users", userId), userDetails as Partial<UserDetails>);
         }
-        
-        dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
 
         await addDoc(collection(db, 'requests'), {
             ...details,

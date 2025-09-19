@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { UserDetails } from '@/lib/types';
 
 const RequestFormSchema = z.object({
   purpose: z.string().min(1, "Purpose is required"),
@@ -101,7 +102,7 @@ export default function ComponentCart() {
                   max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value, 10))}
+                  onChange={e => updateCartQuantity(item.componentId!, isNaN(parseInt(e.target.value, 10)) ? 1 : parseInt(e.target.value, 10))}
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
