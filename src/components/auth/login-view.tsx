@@ -19,7 +19,11 @@ export default function LoginView() {
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading('admin');
-    if (email === 'admin@ieee1' && password === 'admin@ieee1') {
+    
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+    if (email === adminEmail && password === adminPassword) {
       setTimeout(() => {
         login('admin');
         toast({ title: 'Admin login successful', description: 'Welcome, administrator.' });
@@ -85,7 +89,7 @@ export default function LoginView() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@ieee1"
+                  placeholder="admin@ieee.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -97,7 +101,7 @@ export default function LoginView() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="admin@ieee1"
+                  placeholder="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

@@ -14,7 +14,7 @@ export type CartItem = {
 };
 
 export type ComponentRequest = {
-  id: string;
+  id:string;
   userName: string;
   department: string;
   year: string;
@@ -26,3 +26,12 @@ export type ComponentRequest = {
 };
 
 export type UserRole = 'admin' | 'user' | null;
+
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    department: string;
+    year: string;
+    createdAt: Date;
+};

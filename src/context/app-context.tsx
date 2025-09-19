@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useReducer, ReactNode, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import type { UserRole, Component, CartItem, ComponentRequest } from '@/lib/types';
-import { initialComponents, initialRequests } from '@/lib/mock-data';
+import type { UserRole, Component, CartItem, ComponentRequest, User } from '@/lib/types';
+import { initialComponents, initialRequests, initialUsers } from '@/lib/mock-data';
 import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
 
 type AppState = {
@@ -11,6 +11,7 @@ type AppState = {
   components: Component[];
   cart: CartItem[];
   requests: ComponentRequest[];
+  users: User[];
 };
 
 type AppContextType = AppState & {
@@ -43,6 +44,7 @@ const initialState: AppState = {
   components: initialComponents,
   cart: [],
   requests: initialRequests,
+  users: initialUsers,
 };
 
 function appReducer(state: AppState, action: Action): AppState {

@@ -2,16 +2,17 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Shield, ListChecks, FileText } from 'lucide-react';
+import { Shield, ListChecks, FileText, Users } from 'lucide-react';
 import InventoryManager from '@/components/admin/inventory-manager';
 import RequestManager from '@/components/admin/request-manager';
 import ReportGenerator from '@/components/admin/report-generator';
+import UserManager from '@/components/admin/user-manager';
 
 export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-4 lg:p-8">
       <Tabs defaultValue="inventory" className="w-full">
-        <TabsList className="mb-4 grid w-full grid-cols-3">
+        <TabsList className="mb-4 grid w-full grid-cols-4">
           <TabsTrigger value="inventory">
             <Shield className="mr-2 h-4 w-4" />
             Inventory
@@ -20,9 +21,13 @@ export default function AdminDashboard() {
             <ListChecks className="mr-2 h-4 w-4" />
             Requests
           </TabsTrigger>
+          <TabsTrigger value="users">
+            <Users className="mr-2 h-4 w-4" />
+            Users
+          </TabsTrigger>
           <TabsTrigger value="report">
             <FileText className="mr-2 h-4 w-4" />
-            Weekly Report
+            Report
           </TabsTrigger>
         </TabsList>
         <TabsContent value="inventory">
@@ -47,11 +52,22 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="users">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">User Management</CardTitle>
+                    <CardDescription>View details of all registered members.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <UserManager />
+                </CardContent>
+            </Card>
+        </TabsContent>
         <TabsContent value="report">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Generate Report</CardTitle>
-              <CardDescription>Create a summary of approved components from the last 7 days.</CardDescription>
+              <CardDescription>Create a summary of approved components for a specific period.</CardDescription>
             </CardHeader>
             <CardContent>
               <ReportGenerator />

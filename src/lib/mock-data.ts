@@ -1,5 +1,5 @@
 import { Cpu, MemoryStick, Zap, RadioTower, CircuitBoard, Droplets, HardDrive } from 'lucide-react';
-import type { Component, ComponentRequest } from './types';
+import type { Component, ComponentRequest, User } from './types';
 
 export const initialComponents: Component[] = [
   { id: '1', name: 'Arduino Uno', description: 'Microcontroller board based on the ATmega328P.', quantity: 25, icon: Cpu },
@@ -52,4 +52,11 @@ export const initialRequests: ComponentRequest[] = [
     createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     approvedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
   },
+];
+
+export const initialUsers: User[] = [
+    { id: 'user-1', name: 'Alice Johnson', email: 'alice@example.com', department: 'Electrical Engineering', year: '3rd', createdAt: new Date('2023-01-15') },
+    { id: 'user-2', name: 'Bob Williams', email: 'bob@example.com', department: 'Computer Science', year: '2nd', createdAt: new Date('2023-02-20') },
+    { id: 'user-3', name: 'Charlie Brown', email: 'charlie@example.com', department: 'Mechatronics', year: '4th', createdAt: new Date('2022-09-10') },
+    { id: 'user-4', name: 'Diana Prince', email: 'diana@example.com', department: 'Computer Engineering', year: '1st', createdAt: new Date('2023-09-01') },
 ];
