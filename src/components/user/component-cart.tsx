@@ -68,7 +68,7 @@ export default function ComponentCart() {
                   max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value))}
+                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value) || 0)}
                 />
                 <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
