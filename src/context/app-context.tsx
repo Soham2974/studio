@@ -100,7 +100,7 @@ const convertTimestamps = (docData: any) => {
   const data = { ...docData };
   for (const key in data) {
     if (data[key] instanceof Timestamp) {
-      data[key] = data[key].toDate();
+      // Keep as Timestamp object for date-fns formatting
     }
   }
   return data;
@@ -194,42 +194,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
   const submitRequest = async (details: { purpose: string }, userDetails: UserDetails) => {
-    const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
-    const querySnapshot = await getDocs(userQuery);
-    let userId: string;
+    try {
+        const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
+        const querySnapshot = await getDocs(userQuery);
+        let userId: string;
 
-    if (querySnapshot.empty) {
-      const userDoc = await addDoc(collection(db, "users"), {
-        ...userDetails,
-        createdAt: serverTimestamp(),
-      });
-      userId = userDoc.id;
-    } else {
-      const userDoc = querySnapshot.docs[0];
-      userId = userDoc.id;
-      await updateDoc(doc(db, "users", userId), userDetails);
+        if (querySnapshot.empty) {
+        const userDoc = await addDoc(collection(db, "users"), {
+            ...userDetails,
+            createdAt: serverTimestamp(),
+        });
+        userId = userDoc.id;
+        } else {
+        const userDoc = querySnapshot.docs[0];
+        userId = userDoc.id;
+        // Update user details if they have changed
+        await updateDoc(doc(db, "users", userId), userDetails);
+        }
+        
+        dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
+
+        await addDoc(collection(db, 'requests'), {
+            ...details,
+            userId: userId,
+            userName: userDetails.name,
+            department: userDetails.department,
+            year: userDetails.year,
+            items: state.cart.map(item => ({
+                componentId: item.componentId,
+                quantity: item.quantity,
+                name: state.components.find(c => c.id === item.componentId)?.name || 'Unknown',
+                returnedQuantity: 0,
+            })),
+            status: 'pending',
+            createdAt: serverTimestamp(),
+        });
+
+        dispatch({ type: 'SET_CART', payload: [] });
+        toast({ title: "Request Submitted", description: "Your component request has been sent for approval." });
+
+    } catch (error) {
+        console.error("Error submitting request: ", error);
+        toast({
+            variant: "destructive",
+            title: "Submission Failed",
+            description: "There was an error submitting your request. Please try again.",
+        });
     }
-    
-    dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
-
-    await addDoc(collection(db, 'requests'), {
-      ...details,
-      userId: userId,
-      userName: userDetails.name,
-      department: userDetails.department,
-      year: userDetails.year,
-      items: state.cart.map(item => ({
-        componentId: item.componentId,
-        quantity: item.quantity,
-        name: state.components.find(c => c.id === item.componentId)?.name || 'Unknown',
-        returnedQuantity: 0,
-      })),
-      status: 'pending',
-      createdAt: serverTimestamp(),
-    });
-
-    dispatch({ type: 'SET_CART', payload: [] });
-    toast({ title: "Request Submitted", description: "Your component request has been sent for approval." });
   };
 
   const addComponent = async (component: Omit<Component, 'id'|'icon'> & {icon: string}) => {

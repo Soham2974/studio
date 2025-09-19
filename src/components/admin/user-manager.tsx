@@ -49,8 +49,9 @@ export default function UserManager() {
   };
   
   const formatDate = (date: Date | Timestamp | undefined) => {
-    if (!date) return '';
-    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    if (!date) return 'N/A';
+    // Firestore Timestamps need to be converted to JS Dates
+    const dateObj = date instanceof Timestamp ? date.toDate() : date;
     return format(dateObj, 'PP');
   }
 
