@@ -151,11 +151,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const login = (role: 'admin' | 'user') => {
       if (role === 'user') {
-        const sortedUsers = [...state.users].sort((a, b) => (b.createdAt as Timestamp).toMillis() - (a.createdAt as Timestamp).toMillis());
+        const sortedUsers = [...state.users].sort((a, b) => {
+          const aTime = (a.createdAt as Timestamp)?.toMillis() || 0;
+          const bTime = (b.createdAt as Timestamp)?.toMillis() || 0;
+          return bTime - aTime;
+        });
+
         const lastUser = sortedUsers.length > 0 ? sortedUsers[0] : null;
         if (lastUser) {
              const userDetails = { name: lastUser.name, department: lastUser.department, year: lastUser.year, phoneNumber: lastUser.phoneNumber, email: lastUser.email };
              dispatch({ type: 'LOGIN', payload: { role, userDetails } });
+             dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
         } else {
              dispatch({ type: 'LOGIN', payload: { role, userDetails: null } });
         }
@@ -202,6 +208,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const submitRequest = async (requestData: UserDetails & { purpose: string }) => {
     const { purpose, ...userDetails } = requestData;
+
+    if (state.cart.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "Cart is empty",
+            description: "Please add items to your cart before submitting a request.",
+        });
+        return;
+    }
 
     try {
         const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
@@ -399,3 +414,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
