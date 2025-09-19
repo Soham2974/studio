@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
@@ -218,7 +219,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       department: userDetails.department,
       year: userDetails.year,
       items: state.cart.map(item => ({
-        ...item,
+        componentId: item.componentId,
+        quantity: item.quantity,
         name: state.components.find(c => c.id === item.componentId)?.name || 'Unknown',
         returnedQuantity: 0,
       })),
