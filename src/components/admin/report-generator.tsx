@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { subDays, subMonths, subYears } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { FileText } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 
 type Period = '7d' | '1m' | '6m' | '1y' | 'all';
 
@@ -63,6 +63,57 @@ export default function ReportGenerator() {
     return requestDate >= startDate;
   });
 
+  const handleDownload = () => {
+    if (filteredRequests.length === 0) return;
+
+    const headers = [
+      "Sr.",
+      "Student",
+      "Department",
+      "Year",
+      "Purpose",
+      "Date",
+      "Items",
+      "Status",
+      "Return Status"
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    filteredRequests.forEach((request, index) => {
+      const itemsString = request.items
+        .map(item => `"${item.name} x ${item.quantity}"`)
+        .join('; ');
+      
+      const date = format(request.approvedAt || request.createdAt, 'PP');
+      const returnStatus = getReturnStatus(request);
+      
+      const values = [
+        index + 1,
+        `"${request.userName}"`,
+        `"${request.department}"`,
+        `"${request.year} Year"`,
+        `"${request.purpose.replace(/"/g, '""')}"`,
+        `"${date}"`,
+        `"${itemsString}"`,
+        `"${request.status}"`,
+        `"${returnStatus}"`
+      ];
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `report-${period}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-start items-center gap-4">
@@ -78,6 +129,10 @@ export default function ReportGenerator() {
                 <SelectItem value="all">All Time</SelectItem>
             </SelectContent>
         </Select>
+        <Button onClick={handleDownload} disabled={filteredRequests.length === 0} variant="outline">
+          <Download className="mr-2 h-4 w-4" />
+          Download Report
+        </Button>
       </div>
       
       <div className="rounded-md border">
