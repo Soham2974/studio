@@ -231,9 +231,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
   const submitRequest = async (requestData: UserDetails & { purpose: string }) => {
-    const { authUser } = state;
-    if (!authUser) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "You must be signed in to submit a request." });
+    if (!state.authUser) {
+      toast({ variant: "destructive", title: "Authentication Error", description: "You must be signed in to submit a request. Please wait and try again." });
       return;
     }
     if (state.cart.length === 0) {
@@ -244,12 +243,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const { purpose, ...userDetails } = requestData;
 
     try {
-        const userDocRef = doc(db, "users", authUser.uid);
+        const userDocRef = doc(db, "users", state.authUser.uid);
         await setDoc(userDocRef, { ...userDetails, createdAt: serverTimestamp() }, { merge: true });
 
         await addDoc(collection(db, 'requests'), {
             purpose: purpose,
-            userId: authUser.uid,
+            userId: state.authUser.uid,
             userName: userDetails.name,
             department: userDetails.department,
             year: userDetails.year,
@@ -426,3 +425,5 @@ export function useAppContext() {
   }
   return context;
 }
+
+    
