@@ -150,17 +150,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   const login = (role: 'admin' | 'user') => {
-      let userDetails: UserDetails | null = null;
       if (role === 'user') {
-        // Find if user already exists
-        const lastUser = state.users.length > 0 ? state.users[0] : null;
+        const sortedUsers = [...state.users].sort((a, b) => (b.createdAt as Timestamp).toMillis() - (a.createdAt as Timestamp).toMillis());
+        const lastUser = sortedUsers.length > 0 ? sortedUsers[0] : null;
         if (lastUser) {
-            userDetails = { name: lastUser.name, department: lastUser.department, year: lastUser.year, phoneNumber: lastUser.phoneNumber, email: lastUser.email };
+             const userDetails = { name: lastUser.name, department: lastUser.department, year: lastUser.year, phoneNumber: lastUser.phoneNumber, email: lastUser.email };
+             dispatch({ type: 'LOGIN', payload: { role, userDetails } });
         } else {
-             userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
+             dispatch({ type: 'LOGIN', payload: { role, userDetails: null } });
         }
+      } else {
+         dispatch({ type: 'LOGIN', payload: { role, userDetails: null } });
       }
-      dispatch({ type: 'LOGIN', payload: { role, userDetails } });
   }
   const logout = () => dispatch({ type: 'LOGOUT' });
 

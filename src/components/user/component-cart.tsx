@@ -10,10 +10,10 @@ import { Trash2, Send, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import type { UserDetails } from '@/lib/types';
 
 const RequestFormSchema = z.object({
   purpose: z.string().min(1, "Purpose is required"),
@@ -43,14 +43,23 @@ export default function ComponentCart() {
   });
 
   useEffect(() => {
-    if (isFormOpen) {
+    if (userDetails && isFormOpen) {
       form.reset({
         purpose: '',
-        name: userDetails?.name || '',
-        email: userDetails?.email || '',
-        phoneNumber: userDetails?.phoneNumber || '',
-        department: userDetails?.department || '',
-        year: userDetails?.year || '',
+        name: userDetails.name || '',
+        email: userDetails.email || '',
+        phoneNumber: userDetails.phoneNumber || '',
+        department: userDetails.department || '',
+        year: userDetails.year || '',
+      });
+    } else if (isFormOpen) {
+      form.reset({
+        purpose: '',
+        name: '',
+        email: '',
+        phoneNumber: '',
+        department: '',
+        year: '',
       });
     }
   }, [userDetails, isFormOpen, form]);
@@ -136,7 +145,7 @@ export default function ComponentCart() {
                         <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="department" render={({ field }) => (
-                        <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Department</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>
                     )}/>
                      <FormField control={form.control} name="year" render={({ field }) => (
                         <FormItem><FormLabel>Year</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
