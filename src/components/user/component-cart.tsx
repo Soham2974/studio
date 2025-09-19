@@ -27,7 +27,7 @@ export default function ComponentCart() {
 
   const cartDetails = cart.map(item => {
     const component = components.find(c => c.id === item.componentId);
-    return { ...item, ...component };
+    return { ...item, name: component?.name, availableQuantity: component?.quantity };
   });
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
@@ -57,7 +57,7 @@ export default function ComponentCart() {
         ) : (
           <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
             {cartDetails.map(item => (
-              <div key={item.id} className="flex items-center justify-between gap-2">
+              <div key={item.componentId} className="flex items-center justify-between gap-2">
                 <div className="flex-grow">
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
@@ -65,12 +65,12 @@ export default function ComponentCart() {
                 <Input
                   type="number"
                   min="1"
-                  max={item.quantity}
+                  max={item.availableQuantity}
                   className="w-16 h-9"
                   value={item.quantity}
-                  onChange={e => updateCartQuantity(item.id!, parseInt(e.target.value))}
+                  onChange={e => updateCartQuantity(item.componentId!, parseInt(e.target.value))}
                 />
-                <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id!)}>
+                <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.componentId!)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
