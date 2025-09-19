@@ -13,9 +13,14 @@ const firebaseConfig = {
   "messagingSenderId": "336506941102"
 };
 
-// IMPORTANT: For your app to work, you must update your Firestore security rules.
-// Go to your Firebase project console -> Firestore Database -> Rules
-// and replace the default rules with the following:
+// IMPORTANT: For your app to work, you must take two steps:
+// 1. Enable Anonymous Authentication in Firebase.
+//    - Go to your Firebase project console -> Authentication -> Sign-in method.
+//    - Click on "Anonymous" and enable it.
+//
+// 2. Update your Firestore security rules.
+//    - Go to your Firebase project console -> Firestore Database -> Rules
+//    - Replace the default rules with the following:
 /*
 rules_version = '2';
 service cloud.firestore {

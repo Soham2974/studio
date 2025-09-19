@@ -12,26 +12,19 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { Badge } from '@/components/ui/badge';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { UserSchema } from '@/lib/types';
 import type { UserDetails } from '@/lib/types';
 
-const RequestFormSchema = z.object({
-  purpose: z.string().min(1, "Purpose is required"),
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  phoneNumber: z.string().regex(/^\+91[0-9]{10}$/, "Phone number must be in +91XXXXXXXXXX format"),
-  department: z.string().min(1, "Department is required"),
-  year: z.string().min(1, "Year is required"),
-});
-
-type FormValues = z.infer<typeof RequestFormSchema>;
+type FormValues = UserDetails & { purpose: string };
 
 export default function ComponentCart() {
   const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, userDetails } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
   
   const form = useForm<FormValues>({
-    resolver: zodResolver(RequestFormSchema),
+    resolver: zodResolver(UserSchema.extend({
+      purpose: z.string().min(1, "Purpose is required"),
+    })),
     defaultValues: {
       purpose: '',
       name: '',
@@ -142,7 +135,7 @@ export default function ComponentCart() {
                      <FormField control={form.control} name="email" render={({ field }) => (
                         <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
-                     <FormField control={form.control} name="phoneNumber" render={({ field }) => (
+                     <FormField control={form-control} name="phoneNumber" render={({ field }) => (
                         <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )}/>
                      <FormField control={form.control} name="department" render={({ field }) => (
