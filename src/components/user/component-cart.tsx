@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { UserDetails } from '@/lib/types';
 
 const RequestFormSchema = z.object({
   purpose: z.string().min(1, "Purpose is required"),
@@ -30,17 +29,16 @@ type FormValues = z.infer<typeof RequestFormSchema>;
 export default function ComponentCart() {
   const { cart, components, removeFromCart, updateCartQuantity, submitRequest, clearCart, userDetails } = useAppContext();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const { toast } = useToast();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(RequestFormSchema),
     defaultValues: {
       purpose: '',
       name: '',
+      email: '',
       phoneNumber: '',
       department: '',
       year: '',
-      email: '',
     }
   });
 
@@ -49,10 +47,10 @@ export default function ComponentCart() {
       form.reset({
         purpose: '',
         name: userDetails?.name || '',
+        email: userDetails?.email || '',
         phoneNumber: userDetails?.phoneNumber || '',
         department: userDetails?.department || '',
         year: userDetails?.year || '',
-        email: userDetails?.email || '',
       });
     }
   }, [userDetails, isFormOpen, form]);
@@ -64,8 +62,7 @@ export default function ComponentCart() {
   });
 
   const onSubmit: SubmitHandler<FormValues> = (data) => {
-    const {purpose, ...requestUserDetails} = data;
-    submitRequest({ purpose }, requestUserDetails);
+    submitRequest(data);
     setIsFormOpen(false);
     form.reset();
   };

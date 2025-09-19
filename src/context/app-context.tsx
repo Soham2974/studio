@@ -39,7 +39,7 @@ type AppContextType = AppState & {
   removeFromCart: (componentId: string) => void;
   updateCartQuantity: (componentId: string, quantity: number) => void;
   clearCart: () => void;
-  submitRequest: (details: { purpose: string }, userDetails: UserDetails) => void;
+  submitRequest: (requestData: UserDetails & { purpose: string }) => void;
   addComponent: (component: Omit<Component, 'id' | 'icon'> & {icon: string}) => void;
   updateComponent: (component: Component) => void;
   deleteComponent: (componentId: string) => void;
@@ -152,8 +152,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = (role: 'admin' | 'user') => {
       let userDetails: UserDetails | null = null;
       if (role === 'user') {
-        // Initialize with empty details, to be filled by the form
-        userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
+        // Find if user already exists
+        const lastUser = state.users.length > 0 ? state.users[0] : null;
+        if (lastUser) {
+            userDetails = { name: lastUser.name, department: lastUser.department, year: lastUser.year, phoneNumber: lastUser.phoneNumber, email: lastUser.email };
+        } else {
+             userDetails = {name: '', department: '', year: '', phoneNumber: '', email: ''};
+        }
       }
       dispatch({ type: 'LOGIN', payload: { role, userDetails } });
   }
@@ -194,7 +199,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
-  const submitRequest = async (details: { purpose: string }, userDetails: UserDetails) => {
+  const submitRequest = async (requestData: UserDetails & { purpose: string }) => {
+    const { purpose, ...userDetails } = requestData;
+
     try {
         const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
         const querySnapshot = await getDocs(userQuery);
@@ -209,12 +216,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else {
             const userDoc = querySnapshot.docs[0];
             userId = userDoc.id;
-            // Update user details if they have changed
             await updateDoc(doc(db, "users", userId), userDetails as Partial<UserDetails>);
         }
 
         await addDoc(collection(db, 'requests'), {
-            ...details,
+            purpose: purpose,
             userId: userId,
             userName: userDetails.name,
             department: userDetails.department,
