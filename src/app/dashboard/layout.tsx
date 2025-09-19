@@ -3,26 +3,35 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
-import LoginView from '@/components/auth/login-view';
+import Header from '@/components/layout/header';
 import { Loader2 } from 'lucide-react';
 
-export default function Home() {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { userRole } = useAppContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (userRole) {
-      router.replace('/dashboard');
+    if (userRole === null) {
+      router.replace('/');
     }
   }, [userRole, router]);
 
-  if (userRole) {
+  if (!userRole) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-  
-  return <LoginView />;
+
+  return (
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <Header />
+      <main className="flex-1">{children}</main>
+    </div>
+  );
 }
