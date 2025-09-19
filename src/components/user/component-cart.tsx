@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Send, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useForm, SubmitHandler } from "react-hook-form";
+import { Badge } from '@/components/ui/badge';
 
 type FormValues = {
   userName: string;
