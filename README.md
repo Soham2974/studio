@@ -40,11 +40,13 @@ This allows authenticated users to read and write data to the database.
 
 ## How to Deploy Your Application (Go Live)
 
-Your application is configured for **Firebase App Hosting**. To deploy it and make it live, follow these steps in your local terminal:
+Your application is configured for **Firebase App Hosting**, a service that runs your application in the cloud. Once you deploy your app, you do **not** need to keep your laptop on. Firebase handles everything.
+
+To deploy your application and make it live, follow these steps in your local terminal:
 
 ### Step 1: Install the Firebase CLI
 
-If you haven't already, install the Firebase command-line tools globally.
+If you haven't already, install the Firebase command-line tools globally. This is a one-time setup.
 
 ```bash
 npm install -g firebase-tools
@@ -52,7 +54,7 @@ npm install -g firebase-tools
 
 ### Step 2: Log in to Firebase
 
-Log in to your Google account to connect the CLI to Firebase.
+Log in to your Google account to connect the command line to your Firebase project.
 
 ```bash
 firebase login
@@ -60,10 +62,10 @@ firebase login
 
 ### Step 3: Deploy the App
 
-In your project's root directory, run the deploy command.
+In your project's root directory on your laptop, run the deploy command. This will build your app and send it to Firebase's cloud servers.
 
 ```bash
 firebase deploy --only hosting
 ```
 
-After the command finishes, it will give you a URL where your live application can be accessed (e.g., `https://<your-project-id>.web.app`).
+After the command finishes, it will give you a URL where your live application can be accessed (e.g., `https://<your-project-id>.web.app`). Your website is now live for anyone to visit!
