@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { ComponentRequest } from '@/lib/types';
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 
 export default function UserRequestHistory() {
-  const { requests, userDetails, authUser } = useAppContext();
+  const { requests, authUser } = useAppContext();
   
   const userRequests = authUser ? requests.filter(r => r.userId === authUser.uid) : [];
 
@@ -31,7 +31,7 @@ export default function UserRequestHistory() {
 
   const formatDate = (date: Date | Timestamp | undefined) => {
     if (!date) return '';
-    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    const dateObj = date instanceof Timestamp ? date.toDate() : date;
     return format(dateObj, 'PP');
   }
 

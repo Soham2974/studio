@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export default function RequestManager() {
   const { requests, approveRequest, rejectRequest } = useAppContext();
@@ -25,7 +25,7 @@ export default function RequestManager() {
   
   const formatDate = (date: Date | Timestamp | undefined) => {
     if (!date) return '';
-    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    const dateObj = date instanceof Timestamp ? date.toDate() : date;
     return format(dateObj, 'PP');
   }
 

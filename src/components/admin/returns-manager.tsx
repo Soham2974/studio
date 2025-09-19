@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Save } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ComponentRequest } from '@/lib/types';
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export default function ReturnsManager() {
   const { requests, updateReturnQuantity } = useAppContext();
@@ -46,7 +46,7 @@ export default function ReturnsManager() {
 
   const formatDate = (date: Date | Timestamp | undefined) => {
     if (!date) return '';
-    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    const dateObj = date instanceof Timestamp ? date.toDate() : date;
     return format(dateObj, 'PP');
   }
   

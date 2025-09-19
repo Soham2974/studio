@@ -10,7 +10,7 @@ import { subDays, subMonths, subYears } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import type { ComponentRequest } from '@/lib/types';
-import type { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 type Period = '7d' | '1m' | '6m' | '1y' | 'all';
 
@@ -69,7 +69,7 @@ export default function ReportGenerator() {
   
   const formatDate = (date: Date | Timestamp | undefined) => {
     if (!date) return '';
-    const dateObj = date instanceof Date ? date : (date as Timestamp).toDate();
+    const dateObj = date instanceof Timestamp ? date.toDate() : date;
     return format(dateObj, 'PP');
   }
 
