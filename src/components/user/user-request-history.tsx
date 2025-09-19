@@ -10,9 +10,9 @@ import type { Timestamp } from 'firebase/firestore';
 
 
 export default function UserRequestHistory() {
-  const { requests, userDetails } = useAppContext();
+  const { requests, userDetails, authUser } = useAppContext();
   
-  const userRequests = requests.filter(r => r.userName === userDetails?.name);
+  const userRequests = authUser ? requests.filter(r => r.userId === authUser.uid) : [];
 
   const getStatusVariant = (status: ComponentRequest['status']) => {
     switch (status) {
@@ -35,7 +35,7 @@ export default function UserRequestHistory() {
     return format(dateObj, 'PP');
   }
 
-  if (!userDetails || userRequests.length === 0) {
+  if (userRequests.length === 0) {
     return (
         <Card>
             <CardHeader>

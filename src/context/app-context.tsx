@@ -5,7 +5,8 @@ import { createContext, useContext, useReducer, ReactNode, useCallback, useEffec
 import { useToast } from "@/hooks/use-toast";
 import type { UserRole, Component, CartItem, ComponentRequest, User, UserDetails } from '@/lib/types';
 import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
-import { db } from '@/lib/firebase-config';
+import { auth, db } from '@/lib/firebase-config';
+import { onAuthStateChanged, signInAnonymously, type User as AuthUser } from 'firebase/auth';
 import { 
   collection, 
   onSnapshot, 
@@ -17,6 +18,7 @@ import {
   orderBy, 
   where,
   getDocs,
+  setDoc,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
@@ -24,6 +26,7 @@ import { Cpu, CircuitBoard, Droplets, HardDrive, MemoryStick, RadioTower, Zap } 
 
 type AppState = {
   userRole: UserRole;
+  authUser: AuthUser | null;
   userDetails: UserDetails | null;
   isDataLoaded: boolean;
   components: Component[];
@@ -54,8 +57,9 @@ const iconMap = { Cpu, CircuitBoard, Droplets, HardDrive, MemoryStick, RadioTowe
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
-  | { type: 'LOGIN'; payload: { role: 'admin' | 'user', userDetails: UserDetails | null } }
+  | { type: 'LOGIN'; payload: { role: 'admin' | 'user' } }
   | { type: 'LOGOUT' }
+  | { type: 'SET_AUTH_USER'; payload: AuthUser | null }
   | { type: 'SET_CART'; payload: CartItem[] }
   | { type: 'SET_COMPONENTS'; payload: Component[] }
   | { type: 'SET_REQUESTS'; payload: ComponentRequest[] }
@@ -65,6 +69,7 @@ type Action =
 
 const initialState: AppState = {
   userRole: null,
+  authUser: null,
   userDetails: null,
   isDataLoaded: false,
   components: [],
@@ -76,9 +81,11 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'LOGIN':
-      return { ...state, userRole: action.payload.role, userDetails: action.payload.userDetails };
+      return { ...state, userRole: action.payload.role };
     case 'LOGOUT':
       return { ...state, userRole: null, userDetails: null, cart: [] };
+    case 'SET_AUTH_USER':
+      return { ...state, authUser: action.payload };
     case 'SET_CART':
       return { ...state, cart: action.payload };
     case 'SET_COMPONENTS':
@@ -113,6 +120,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     dispatch({ type: 'SET_DATA_LOADED', payload: false });
 
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        dispatch({ type: 'SET_AUTH_USER', payload: user });
+        
+        // Fetch user details from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const unsubscribeUserDetails = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            dispatch({ type: 'SET_USER_DETAILS', payload: doc.data() as UserDetails });
+          } else {
+            dispatch({ type: 'SET_USER_DETAILS', payload: null });
+          }
+        });
+        
+        // Don't forget to return the unsubscribe function for user details
+        // but since we are in an auth listener, this is tricky.
+        // For now, we assume user details don't change often after login.
+      } else {
+        // No user is signed in, so attempt to sign in anonymously.
+        await signInAnonymously(auth);
+      }
+    });
+
     const qComp = query(collection(db, "components"), orderBy("name"));
     const unsubscribeComponents = onSnapshot(qComp, (querySnapshot) => {
       const components = querySnapshot.docs.map(doc => {
@@ -125,49 +155,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } as Component;
       });
       dispatch({ type: 'SET_COMPONENTS', payload: components });
+    }, (error) => {
+      console.error("Error fetching components:", error);
+      toast({ variant: 'destructive', title: "Error", description: "Could not fetch components. Check Firestore security rules."});
     });
 
     const qReq = query(collection(db, "requests"), orderBy("createdAt", "desc"));
     const unsubscribeRequests = onSnapshot(qReq, (querySnapshot) => {
       const requests = querySnapshot.docs.map(doc => ({ ...convertTimestamps(doc.data()), id: doc.id }) as ComponentRequest);
       dispatch({ type: 'SET_REQUESTS', payload: requests });
+    }, (error) => {
+      console.error("Error fetching requests:", error);
     });
 
     const qUsers = query(collection(db, "users"), orderBy("createdAt", "desc"));
     const unsubscribeUsers = onSnapshot(qUsers, (querySnapshot) => {
       const users = querySnapshot.docs.map(doc => ({ ...convertTimestamps(doc.data()), id: doc.id }) as User);
       dispatch({ type: 'SET_USERS', payload: users });
+    }, (error) => {
+      console.error("Error fetching users:", error);
     });
 
     dispatch({ type: 'SET_DATA_LOADED', payload: true });
     
     return () => {
+      unsubscribeAuth();
       unsubscribeComponents();
       unsubscribeRequests();
       unsubscribeUsers();
     };
-  }, []);
+  }, [toast]);
 
 
   const login = (role: 'admin' | 'user') => {
-      if (role === 'user') {
-        const sortedUsers = [...state.users].sort((a, b) => {
-          const aTime = (a.createdAt as Timestamp)?.toMillis() || 0;
-          const bTime = (b.createdAt as Timestamp)?.toMillis() || 0;
-          return bTime - aTime;
-        });
-
-        const lastUser = sortedUsers.length > 0 ? sortedUsers[0] : null;
-        if (lastUser) {
-             const userDetails = { name: lastUser.name, department: lastUser.department, year: lastUser.year, phoneNumber: lastUser.phoneNumber, email: lastUser.email };
-             dispatch({ type: 'LOGIN', payload: { role, userDetails } });
-             dispatch({ type: 'SET_USER_DETAILS', payload: userDetails });
-        } else {
-             dispatch({ type: 'LOGIN', payload: { role, userDetails: null } });
-        }
-      } else {
-         dispatch({ type: 'LOGIN', payload: { role, userDetails: null } });
-      }
+      dispatch({ type: 'LOGIN', payload: { role } });
   }
   const logout = () => dispatch({ type: 'LOGOUT' });
 
@@ -207,37 +228,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearCart = () => dispatch({type: 'SET_CART', payload: []});
 
   const submitRequest = async (requestData: UserDetails & { purpose: string }) => {
-    const { purpose, ...userDetails } = requestData;
-
+    const { authUser } = state;
+    if (!authUser) {
+      toast({ variant: "destructive", title: "Authentication Error", description: "You are not signed in. Please refresh the page." });
+      return;
+    }
     if (state.cart.length === 0) {
-        toast({
-            variant: "destructive",
-            title: "Cart is empty",
-            description: "Please add items to your cart before submitting a request.",
-        });
+        toast({ variant: "destructive", title: "Cart is empty", description: "Please add items to your cart." });
         return;
     }
 
+    const { purpose, ...userDetails } = requestData;
+
     try {
-        const userQuery = query(collection(db, "users"), where("email", "==", userDetails.email));
-        const querySnapshot = await getDocs(userQuery);
-        let userId: string;
+        const userDocRef = doc(db, "users", authUser.uid);
+        
+        // Save or update the user's details
+        await setDoc(userDocRef, { ...userDetails, createdAt: serverTimestamp() }, { merge: true });
 
-        if (querySnapshot.empty) {
-            const userDocRef = await addDoc(collection(db, "users"), {
-                ...userDetails,
-                createdAt: serverTimestamp(),
-            });
-            userId = userDocRef.id;
-        } else {
-            const userDoc = querySnapshot.docs[0];
-            userId = userDoc.id;
-            await updateDoc(doc(db, "users", userId), userDetails as Partial<UserDetails>);
-        }
-
+        // Now, create the component request
         await addDoc(collection(db, 'requests'), {
             purpose: purpose,
-            userId: userId,
+            userId: authUser.uid,
             userName: userDetails.name,
             department: userDetails.department,
             year: userDetails.year,
@@ -251,7 +263,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             createdAt: serverTimestamp(),
         });
 
-        dispatch({ type: 'SET_CART', payload: [] });
+        clearCart();
         toast({ title: "Request Submitted", description: "Your component request has been sent for approval." });
 
     } catch (error) {
@@ -259,7 +271,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast({
             variant: "destructive",
             title: "Submission Failed",
-            description: "There was an error submitting your request. Please try again.",
+            description: "There was an error submitting your request. Please check your connection and try again.",
         });
     }
   };
@@ -414,5 +426,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    
