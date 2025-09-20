@@ -4,7 +4,6 @@
 import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import type { UserRole, Component, CartItem, ComponentRequest, User, UserDetails } from '@/lib/types';
-import { preventOverdraft } from '@/ai/flows/prevent-overdraft-flow';
 import { auth, db } from '@/lib/firebase-config';
 import { onAuthStateChanged, signInAnonymously, type User as AuthUser } from 'firebase/auth';
 import { 
@@ -301,9 +300,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const approveRequest = useCallback(async (requestId: string) => {
     const request = state.requests.find(r => r.id === requestId);
     if (!request) return;
-
+  
     let canApprove = true;
-
     for (const item of request.items) {
       const component = state.components.find(c => c.id === item.componentId);
       if (!component) {
@@ -311,24 +309,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         canApprove = false;
         break;
       }
-
-      const overdraftResult = await preventOverdraft({
-        componentName: component.name,
-        requestedQuantity: item.quantity,
-        currentQuantity: component.quantity,
-      });
-
-      if (overdraftResult.isOverdraft) {
+  
+      if (item.quantity > component.quantity) {
         toast({
           variant: "destructive",
           title: "Overdraft Warning",
-          description: overdraftResult.reason,
+          description: `Not enough stock for ${component.name}. Requested: ${item.quantity}, Available: ${component.quantity}.`,
         });
         canApprove = false;
         break;
       }
     }
-
+  
     if (canApprove) {
       for (const item of request.items) {
         const component = state.components.find(c => c.id === item.componentId)!;
@@ -425,5 +417,3 @@ export function useAppContext() {
   }
   return context;
 }
-
-    
