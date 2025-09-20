@@ -20,8 +20,9 @@ export default function LoginView() {
     e.preventDefault();
     setIsLoading('admin');
     
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    // Hardcoded credentials to solve deployment issue
+    const adminEmail = 'admin@example.com';
+    const adminPassword = 'admin123';
 
     if (email === adminEmail && password === adminPassword) {
       setTimeout(() => {
