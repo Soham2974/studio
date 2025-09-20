@@ -12,7 +12,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isDataLoaded && userRole) {
-      router.replace('/dashboard');
+      router.replace('/dashboard/');
     }
   }, [userRole, isDataLoaded, router]);
 
