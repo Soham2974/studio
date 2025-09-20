@@ -21,8 +21,8 @@ export default function LoginView() {
     setIsLoading('admin');
     
     // Hardcoded credentials to solve deployment issue
-    const adminEmail = 'admin@example.com';
-    const adminPassword = 'admin123';
+    const adminEmail = 'admin@ieee1!';
+    const adminPassword = 'admin@ieee1!';
 
     if (email === adminEmail && password === adminPassword) {
       setTimeout(() => {
