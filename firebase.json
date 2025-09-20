@@ -1,13 +1,21 @@
 {
   "hosting": {
+    "public": "out",
     "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "id": "nextn"
-    }
+    "predeploy": [
+      "npm install",
+      "npm run build"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }
